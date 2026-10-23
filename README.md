@@ -103,6 +103,10 @@ GEMINI_API_KEY=your-key-here
 Restart the server. The `.env` file is read at startup and is ignored by git. You can also set `GEMINI_API_KEY` as an ordinary environment variable, which takes priority. The chat window shows "Powered by Gemini" when the key works and "Basic mode" when it does not. The key is only used by the server and is never logged, put in a URL or sent to the browser.
 
 
+### Deploying to Vercel
+
+The project is ready for Vercel: the pages in `public/` are served by Vercel and the API runs as serverless functions in `api/`, with settings in `vercel.json`. Import the repository, add `GEMINI_API_KEY` as an environment variable, and deploy. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the steps.
+
 ## Folder structure
 
 ```
@@ -112,6 +116,8 @@ Restart the server. The `.env` file is read at startup and is ignored by git. Yo
 |-- .env.example              Documented settings (copy to .env to add your key)
 |-- README.md, CONTRIBUTING.md, SECURITY.md, LICENSE
 |-- .github/workflows/ci.yml  Continuous integration: lint and tests on Node 22 and 24
+|-- vercel.json, .vercelignore  Vercel settings: output folder, security headers, function time limit
+|-- api/                      Vercel serverless functions: one file per API route, sharing _handler.js
 |-- scripts/
 |   `-- lint.js               Dependency-free linter
 |-- src/                      The server
@@ -138,9 +144,9 @@ Restart the server. The `.env` file is read at startup and is ignored by git. Yo
 |-- tests/                    Automated tests, grouped by area
 |   |-- planner/, ai/, http/, client/, quality/
 |   |-- helpers/              Fake page, fixtures, test server and page harness
-|   `-- server.test.js, entry.test.js
+|   `-- server.test.js, entry.test.js, vercel.test.js
 `-- docs/
-    |-- ARCHITECTURE.md, SECURITY.md, ACCESSIBILITY.md, TESTING.md
+    |-- ARCHITECTURE.md, SECURITY.md, ACCESSIBILITY.md, TESTING.md, DEPLOYMENT.md
     `-- screenshots/          Put your screenshots here
 ```
 
@@ -151,7 +157,7 @@ Restart the server. The `.env` file is read at startup and is ignored by git. Yo
 | Code quality | Small single-purpose modules, none over 200 lines. Pure planning logic is separate from HTTP, AI and the page. Dependencies are passed in. A linter removes dead imports and exports. | `src/`, `public/js/`, `scripts/lint.js`, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Security | Server-side validation, safe rendering (no `innerHTML`), strict content security policy, Host and Origin checks, rate limits, size limits, prompt-injection defences, the API key kept in the environment and sent only in a header, and no dependencies to patch. | [docs/SECURITY.md](docs/SECURITY.md), `src/http/`, `src/ai/` |
 | Efficiency | Files are served from memory with Brotli or gzip and ETags, large API answers are compressed, AI ideas are cached, model failover uses cooldowns and a time budget, and planning is a few hundred operations. | `src/http/staticFiles.js`, `src/ai/geminiClient.js` |
-| Testing | 599 automated tests and about 99.9 percent line coverage, covering the planner, the server end to end, the Gemini client and failover, the page logic, accessibility rules, colour contrast and project hygiene. | `tests/`, [docs/TESTING.md](docs/TESTING.md) |
+| Testing | 620 automated tests and about 99.9 percent line coverage, covering the planner, the server end to end, the Gemini client and failover, the page logic, accessibility rules, colour contrast and project hygiene. | `tests/`, [docs/TESTING.md](docs/TESTING.md) |
 | Accessibility | Landmarks, labelled controls, a linked error summary, ARIA tabs with keyboard support, visible focus, contrast checked by tests, light and dark modes, reduced motion and high contrast support, and no information shown by colour alone. | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md), `tests/quality/` |
 | Problem statement alignment | Every requirement of the challenge is delivered. See the table below. | |
 
@@ -173,17 +179,17 @@ Restart the server. The `.env` file is read at startup and is ignored by git. Yo
 | --- | --- | --- | --- |
 | Planner logic | `tests/planner` | 108 | Passed |
 | Gemini client and AI service | `tests/ai` | 71 | Passed |
-| HTTP units, host checks and compression | `tests/http` | 51 | Passed |
-| Server end to end and the program itself | `tests/server.test.js`, `tests/entry.test.js` | 45 | Passed |
+| HTTP units, host checks, client address and compression | `tests/http` | 57 | Passed |
+| Server end to end, the program itself and the Vercel functions | `tests/server.test.js`, `tests/entry.test.js`, `tests/vercel.test.js` | 60 | Passed |
 | Page logic, views, chat, print and download | `tests/client` | 167 | Passed |
 | Accessibility, contrast, print, logo and hygiene | `tests/quality` | 157 | Passed |
-| **Total** | | **599** | **All passed, 0 failed** |
+| **Total** | | **620** | **All passed, 0 failed** |
 
 | Coverage measure | Result | Threshold |
 | --- | --- | --- |
-| Lines | 99.87 percent | 95 percent |
-| Branches | 98.40 percent | 90 percent |
-| Functions | 99.77 percent | 95 percent |
+| Lines | 99.88 percent | 95 percent |
+| Branches | 98.51 percent | 90 percent |
+| Functions | 99.78 percent | 95 percent |
 
 The linter reports no problems. Run `npm run check` to reproduce these results. See [docs/TESTING.md](docs/TESTING.md) for what each group checks.
 

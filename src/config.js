@@ -33,6 +33,13 @@ function readModels(env) {
   return Object.freeze(models);
 }
 
+function readFlag(env, name) {
+  const raw = (env[name] ?? '').trim().toLowerCase();
+  if (raw === '' || raw === 'false' || raw === '0') return false;
+  if (raw === 'true' || raw === '1') return true;
+  throw new Error(`${name} must be true or false.`);
+}
+
 // Host names this server answers to. When it listens only on this machine, that
 // is the usual local names; otherwise ALLOWED_HOSTS lists them, or any name is
 // accepted when it is not set.
@@ -54,6 +61,7 @@ export function loadConfig(env = process.env) {
     port: readInteger(env, 'PORT', 3000, 0, 65535),
     host,
     allowedHosts: readAllowedHosts(env, host),
+    trustProxy: readFlag(env, 'TRUST_PROXY'),
     geminiApiKey: (env.GEMINI_API_KEY ?? '').trim(),
     geminiModels: readModels(env),
     aiTimeoutMs: readInteger(env, 'AI_TIMEOUT_MS', 20_000, 1000, 120_000),

@@ -52,6 +52,10 @@ Event content lives in `src/planner/data/*.js` as plain objects. A test checks t
 - `assistantService.js` also serves the floating chat: it sends earlier turns as untrusted text, adds the visitor's saved plan as context when there is one, and falls back to plan-specific or general site answers when no model is available.
 - `assistantService.js` combines the client and the planner. Each method always returns a usable result and a `source` field (`ai` or `builtin`). Only successful AI idea results are cached, for ten minutes.
 
+## Deployment on Vercel
+
+`createRequestHandler` in `src/app.js` builds the function that answers one request. `createApp` wraps it in a Node server together with the static files, for running locally. On Vercel, `api/_handler.js` uses the same handler without static files, and each file in `api/` re-exports it so that Vercel routes `/api/<name>` to it. Vercel serves `public/` itself and `vercel.json` sets the same security headers on those files. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
 ## Print and download
 
 `planReport.js` turns a plan and its progress into one plain description. `printSheet.js` draws it as the printed document (shown only when printing, styled by `print.css`) and `exportText.js` writes it as a text file, so both always contain the same information. `printing.js` rebuilds the print sheet just before the browser prints.

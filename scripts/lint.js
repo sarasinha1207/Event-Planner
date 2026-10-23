@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SOURCE_DIRS = ['src', 'public/js', 'scripts', 'tests'];
+const SOURCE_DIRS = ['src', 'public/js', 'scripts', 'tests', 'api'];
 const MAX_LINE_LENGTH = 170;
 // Event content is written as one record per line, so it is allowed to be wide.
 const WIDE_FILES = 'src/planner/data/';

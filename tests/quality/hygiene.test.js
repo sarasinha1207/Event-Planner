@@ -26,7 +26,7 @@ describe('project conventions', () => {
   it('ships the expected documents', () => {
     const required = [
       'README.md', 'LICENSE', 'CONTRIBUTING.md', 'SECURITY.md', '.env.example', '.gitignore',
-      'docs/ARCHITECTURE.md', 'docs/SECURITY.md', 'docs/ACCESSIBILITY.md', 'docs/TESTING.md',
+      'docs/ARCHITECTURE.md', 'docs/SECURITY.md', 'docs/ACCESSIBILITY.md', 'docs/TESTING.md', 'docs/DEPLOYMENT.md', 'vercel.json', '.vercelignore',
     ];
     for (const document of required) {
       assert.ok(existsSync(path.join(ROOT, document)), document);

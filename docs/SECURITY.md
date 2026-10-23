@@ -26,6 +26,8 @@ The application stores nothing on the server. Event details are sent to the serv
 | Dependencies | None at runtime or for development | `package.json` |
 | Transport | `Strict-Transport-Security` is sent over encrypted connections | `src/http/security.js` |
 | Fatal errors | Unhandled errors are logged without request content and the process stops instead of continuing in an unknown state; invalid settings stop the server with one clear message | `server.js` |
+| Proxy awareness | The visitor's address for rate limiting is read from `X-Forwarded-For` only when `TRUST_PROXY` is on, because anyone can forge that header when the server is reached directly | `src/http/clientAddress.js` |
+| Static pages on Vercel | `vercel.json` sets the same security headers as the server, and a test checks that the two lists are identical | `vercel.json`, `tests/vercel.test.js` |
 | Network exposure | Binds to `127.0.0.1` unless `HOST` is set | `src/config.js` |
 
 ## Verification

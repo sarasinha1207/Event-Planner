@@ -5,6 +5,7 @@ import { createAssistantService } from './ai/assistantService.js';
 import { readJsonBody } from './http/body.js';
 import { HttpError } from './http/errors.js';
 import { silentLogger } from './logger.js';
+import { clientAddress } from './http/clientAddress.js';
 import { createHostGuard } from './http/hostGuard.js';
 import { createRateLimiter } from './http/rateLimiter.js';
 import { createRouter } from './http/router.js';
@@ -43,10 +44,10 @@ function parsePathname(req) {
   }
 }
 
-// Builds the HTTP server without starting it. Static files are read once at
-// startup; API routes are plain functions over validated JSON.
-export async function createApp({ config, aiClient, logger = silentLogger, now = Date.now, publicDir = DEFAULT_PUBLIC_DIR }) {
-  const staticFiles = await loadStaticFiles(publicDir);
+// Builds the function that answers one request. API routes are plain functions
+// over validated JSON. `staticFiles` is optional: on a host that serves the
+// website itself (such as Vercel) only the API is handled here.
+export function createRequestHandler({ config, aiClient, logger = silentLogger, now = Date.now, staticFiles = null }) {
   const assistant = createAssistantService({ aiClient, logger, now });
   const router = createRouter(createApiRoutes({ assistant, now }));
   const hostGuard = createHostGuard({ allowedHosts: config.allowedHosts });
@@ -56,7 +57,7 @@ export async function createApp({ config, aiClient, logger = silentLogger, now =
   };
 
   function enforceRateLimits(req, route) {
-    const client = req.socket.remoteAddress ?? 'unknown';
+    const client = clientAddress(req, config.trustProxy);
     const buckets = route.limit === 'ai' ? [limiters.general, limiters.ai] : [limiters.general];
     for (const limiter of buckets) {
       const { allowed, retryAfterSeconds } = limiter.check(client);
@@ -89,7 +90,7 @@ export async function createApp({ config, aiClient, logger = silentLogger, now =
     sendJson(req, res, 500, { error: { message: 'Something went wrong on our side. Please try again.' } });
   }
 
-  const server = http.createServer(async (req, res) => {
+  return async function handleRequest(req, res) {
     applySecurityHeaders(res, req);
     const startedAt = performance.now();
     res.once('finish', () => {
@@ -105,12 +106,18 @@ export async function createApp({ config, aiClient, logger = silentLogger, now =
       hostGuard.check(req);
       const pathname = parsePathname(req);
       if (pathname.startsWith('/api/')) await handleApi(req, res, pathname);
-      else serveStatic(req, res, pathname, staticFiles);
+      else if (staticFiles) serveStatic(req, res, pathname, staticFiles);
+      else throw new HttpError(404, 'Not found.');
     } catch (error) {
       sendError(req, res, error);
     }
-  });
+  };
+}
 
+// Builds the HTTP server without starting it. Static files are read once at startup.
+export async function createApp({ publicDir = DEFAULT_PUBLIC_DIR, ...options }) {
+  const staticFiles = await loadStaticFiles(publicDir);
+  const server = http.createServer(createRequestHandler({ ...options, staticFiles }));
   server.requestTimeout = 30_000;
   server.headersTimeout = 15_000;
   server.keepAliveTimeout = 5_000;
