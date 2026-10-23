@@ -7,6 +7,7 @@ import { fileSlug, planToText } from './exportText.js';
 import { applyLimits, clearErrors, readEvent, renderPriorities, showErrors, writeEvent } from './formView.js';
 import { localTodayIso, pickLocale } from './format.js';
 import { emptyProgress, reconcileProgress } from './progress.js';
+import { createPrinter } from './printing.js';
 import { buildResults } from './resultsView.js';
 import { markStep } from './stepper.js';
 import { browserStorage, createStore } from './store.js';
@@ -30,9 +31,11 @@ const els = {
   resultsBody: byId('results-body'),
   dialog: byId('confirm-dialog'),
   steps: byId('stepper'),
+  printRoot: byId('print-root'),
 };
 
 const locale = pickLocale(navigator.language);
+const printer = createPrinter({ root: els.printRoot, getState: () => state, locale });
 
 const announce = (message) => {
   els.status.textContent = message;
@@ -102,7 +105,7 @@ function renderResults({ focus }) {
       onRequestAiIdeas: requestAiIdeas,
       onAsk: askPlanner,
       onDownload: downloadText,
-      onPrint: () => window.print(),
+      onPrint: () => printer.print(),
       onEditDetails: () => {
         els.formHeading.focus();
         els.formHeading.scrollIntoView({ block: 'start' });
@@ -182,10 +185,8 @@ async function init() {
   els.clear.addEventListener('click', () => openConfirm(els.dialog, 'Clear your saved plan? This cannot be undone.', resetToEmpty));
   byId('confirm-yes').addEventListener('click', resetToEmpty);
 
-  // Collapsed vendor sections would be missing from a printout, so open them.
-  window.addEventListener('beforeprint', () => {
-    for (const details of document.querySelectorAll('details.vendor')) details.open = true;
-  });
+  // The print sheet is rebuilt just before printing, so Ctrl+P prints it too.
+  window.addEventListener('beforeprint', printer.refresh);
 
   restoreSavedPlan();
 }

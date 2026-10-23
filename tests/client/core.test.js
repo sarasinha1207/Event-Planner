@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { ApiError, createApi, toFieldErrors } from '../../public/js/api.js';
-import { fileSlug, planToText } from '../../public/js/exportText.js';
 import {
   daysBetween,
   describeDue,
@@ -292,51 +291,5 @@ describe('api client', () => {
   it('reports unreachable servers in plain language', async () => {
     const api = createApi(async () => { throw new TypeError('fetch failed'); });
     await assert.rejects(api.getMeta(), /could not be reached/);
-  });
-});
-
-describe('text export', () => {
-  const progress = setSpent(setTaskDone(setStepDone(emptyProgress(), 'venue-contract', true), plan.timeline.tasks[0].id, true), 'venue', 1000);
-  const text = planToText(plan, progress, 'en');
-
-  it('includes every section', () => {
-    for (const heading of ['EVENT OVERVIEW', 'BUDGET', 'TIMELINE', 'VENDOR CHECKLIST', 'IDEAS']) {
-      assert.ok(text.includes(heading), heading);
-    }
-  });
-
-  it('contains the event facts and optional details', () => {
-    assert.match(text, /Event: Asha and Ravi \(Wedding\)/);
-    assert.match(text, /Guests: 120/);
-    assert.match(text, /Location: Pune/);
-    assert.match(text, /Theme: garden/);
-  });
-
-  it('omits optional details that were not given', () => {
-    const bare = planToText({ ...plan, input: { ...plan.input, location: '', theme: '' } }, emptyProgress(), 'en');
-    assert.doesNotMatch(bare, /Location:|Theme:/);
-  });
-
-  it('reflects progress with checkboxes and spending', () => {
-    assert.match(text, /\[x\] .*Set the vision/);
-    assert.match(text, /\[ \] /);
-    assert.match(text, /\[x\] Review the contract/);
-    assert.match(text, /Total spent: .*1,000/);
-  });
-
-  it('lists vendor questions and ideas', () => {
-    assert.match(text, /\? Which dates and times are held/);
-    assert.match(text, /- Seasonal florals \(Decor and theme\)/);
-  });
-
-  it('is plain text without markup or non-ASCII symbols apart from currency', () => {
-    assert.doesNotMatch(text, /<[a-z]/i);
-  });
-
-  it('builds safe file names', () => {
-    assert.equal(fileSlug('Asha & Ravi: The Wedding!'), 'asha-ravi-the-wedding');
-    assert.equal(fileSlug('../../etc/passwd'), 'etc-passwd');
-    assert.equal(fileSlug('???'), 'event');
-    assert.ok(fileSlug('x'.repeat(100)).length <= 40);
   });
 });

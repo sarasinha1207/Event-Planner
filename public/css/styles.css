@@ -1651,7 +1651,12 @@ dialog::backdrop {
   }
 }
 
-/* Print: show every section, hide controls and decoration. */
+/* Printing. The plan page prints a dedicated sheet (print.css); other pages
+   print as they are, without the decoration. */
+
+#print-root {
+  display: none;
+}
 
 @media print {
   body {
@@ -1659,49 +1664,21 @@ dialog::backdrop {
     color: #000;
   }
 
-  .site-header,
-  .site-footer,
-  .hero,
-  .form-panel,
-  .no-print,
-  .tab-list,
   .skip-link,
-  .info-panel,
+  .no-print,
+  .blob,
   .confetti-layer {
     display: none !important;
   }
 
-  .page-body {
-    margin-top: 0;
-  }
-
-  .layout {
-    display: block;
+  .site-header {
+    position: static;
+    box-shadow: none;
   }
 
   .panel {
-    border: 0;
     box-shadow: none;
-    padding: 0;
     animation: none;
-  }
-
-  .panel::before {
-    display: none;
-  }
-
-  .tab-panel[hidden] {
-    display: block !important;
-  }
-
-  .task,
-  .vendor,
-  .idea {
-    break-inside: avoid;
-  }
-
-  .data-table {
-    min-width: 0;
   }
 }
 

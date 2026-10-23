@@ -45,7 +45,8 @@ The brief asks for a GenAI-powered planning assistant that helps users organise 
 - Ideas ranked by relevance to the stated theme and interests, with the matching words shown.
 - "Ask the planner" box answering budget, timeline, vendor, guest and idea questions.
 - A floating chat assistant on every page. It remembers the conversation for the tab, knows about your saved plan, and keeps working when a Gemini model is exhausted by switching to the next model.
-- Progress saved in the browser (local storage), a plain-text download and a print layout.
+- Progress saved in the browser (local storage).
+- A print sheet and a text download that contain the same information: the event details and progress as points, the budget as a table, and checklists (with what you have already done ticked) for timeline tasks, each vendor's steps and questions to ask, and ideas, with room for notes. Use Save as PDF in the print window to keep a PDF.
 - Six currencies and locale-aware formatting.
 - A vivid indigo, magenta and coral design with a gradient hero, animated entrance effects, hover and press feedback, animated budget bars and a short confetti burst when a plan is created. Light and dark schemes follow the system setting.
 - Line icons drawn from one small set (`public/js/icons.js`), always decorative and paired with text.

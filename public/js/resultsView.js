@@ -81,6 +81,7 @@ export function buildResults({ plan, progress, meta, today, locale, actions }) {
       actionButton('Print', 'print', actions.onPrint),
       actionButton('Edit details', 'edit', actions.onEditDetails),
     ),
+    h('p', { class: 'hint no-print', text: 'To keep a PDF copy, choose Save as PDF as the destination in the print window.' }),
     tabs.element,
   ];
 
