@@ -98,6 +98,58 @@ export const HELP_TEXT =
   'I can answer questions about your budget, timeline, vendors, guest numbers and ideas. ' +
   'Try asking: "How should I split my budget?" or "What should I do next?"';
 
+const SITE_TOPICS = [
+  {
+    words: ['start', 'begin', 'use', 'work', 'how'],
+    answer:
+      'Open Plan an event, choose a wedding, birthday or community event, then enter the name, date, guest count, currency and budget. Choose Create my plan to receive a budget, a dated timeline, a vendor checklist and ideas.',
+  },
+  {
+    words: ['store', 'privacy', 'data', 'save', 'private', 'account', 'secure'],
+    answer:
+      'There is no account. Your plan is stored only in your own browser, and the server does not keep your event details. Choose Clear saved plan on the Plan an event page to remove it.',
+  },
+  {
+    words: ['budget', 'cost', 'money', 'price', 'split'],
+    answer:
+      'Your budget is divided across categories such as venue, food, decor and entertainment, with a reserve held back for surprises. Create a plan to see the exact amounts for your event.',
+  },
+  {
+    words: ['timeline', 'date', 'soon', 'late', 'schedule', 'deadline'],
+    answer:
+      'The timeline counts tasks back from your event date. If the event is close, the tasks are compressed to fit and you are told so. Book the vendors with the longest lead times first.',
+  },
+  {
+    words: ['vendor', 'caterer', 'photographer', 'venue', 'book'],
+    answer:
+      'The vendor checklist lists each vendor with a booking deadline, four standard steps and questions to ask. Create a plan to see it for your event.',
+  },
+  {
+    words: ['ai', 'gemini', 'bot', 'assistant', 'smart'],
+    answer:
+      'Ideas and answers can come from the Gemini AI assistant when it is switched on. When it is not available, a built-in planner answers instead, and every answer says which one wrote it.',
+  },
+];
+
+export const GENERAL_HELP_TEXT =
+  'I can help with planning budgets, timelines, vendors and ideas, and with using this site. Create a plan on the Plan an event page for answers specific to your event.';
+
+// Answers for the chat assistant when no model is available and the visitor
+// has no saved plan.
+export function answerGeneral(question) {
+  const tokens = tokenise(question);
+  let best = null;
+  let bestScore = 0;
+  for (const topic of SITE_TOPICS) {
+    const score = tokens.filter((token) => topic.words.some((word) => token.startsWith(word))).length;
+    if (score > bestScore) {
+      best = topic;
+      bestScore = score;
+    }
+  }
+  return best ? best.answer : GENERAL_HELP_TEXT;
+}
+
 export function answerLocally(question, plan, today) {
   const topic = pickTopic(question);
   return topic ? ANSWERS[topic](plan, today) : HELP_TEXT;

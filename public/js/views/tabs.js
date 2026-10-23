@@ -1,4 +1,5 @@
 import { h } from '../dom.js';
+import { icon } from '../icons.js';
 
 // Tabs following the WAI-ARIA tabs pattern: arrow keys move between tabs,
 // Home and End jump to the ends, and only the selected tab is in the tab order.
@@ -6,17 +7,21 @@ export function createTabs({ label, tabs, initial = 0 }) {
   let selected = initial;
 
   const buttons = tabs.map((tab, index) =>
-    h('button', {
-      type: 'button',
-      role: 'tab',
-      id: `tab-${tab.id}`,
-      class: 'tab',
-      'aria-controls': `panel-${tab.id}`,
-      'aria-selected': String(index === initial),
-      tabindex: index === initial ? '0' : '-1',
-      text: tab.label,
-      on: { click: () => select(index) },
-    }),
+    h(
+      'button',
+      {
+        type: 'button',
+        role: 'tab',
+        id: `tab-${tab.id}`,
+        class: 'tab',
+        'aria-controls': `panel-${tab.id}`,
+        'aria-selected': String(index === initial),
+        tabindex: index === initial ? '0' : '-1',
+        on: { click: () => select(index) },
+      },
+      tab.icon ? icon(tab.icon) : null,
+      h('span', { text: tab.label }),
+    ),
   );
 
   const panels = tabs.map((tab, index) =>

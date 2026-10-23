@@ -7,6 +7,8 @@
 export const MAX_AI_IDEAS = 8;
 export const MAX_QUESTION_LENGTH = 500;
 export const MAX_ANSWER_LENGTH = 1500;
+export const MAX_HISTORY_TURNS = 10;
+export const MAX_HISTORY_TEXT = 1500;
 
 const MAX_TITLE_LENGTH = 80;
 const MAX_DETAIL_LENGTH = 300;
@@ -34,6 +36,13 @@ export const IDEAS_SYSTEM_PROMPT =
 export const ASK_SYSTEM_PROMPT =
   `${SYSTEM_RULES} Answer the question in at most 150 words, using the event details for context. ` +
   'If the details do not contain what you need, say so and give general guidance.';
+
+export const CHAT_SYSTEM_PROMPT =
+  `${SYSTEM_RULES} You are the assistant on the Celebration Planner website, which helps people plan weddings, ` +
+  'birthdays and community events. The site has a Home page and a Plan an event page where visitors enter an event ' +
+  'type, name, date, guest count, currency and budget to receive a budget, a dated timeline, a vendor checklist and ' +
+  "ideas. Plans are stored only in the visitor's browser. Answer in at most 120 words. If <event_details> is present, " +
+  'use it to personalise the answer; otherwise give general guidance and suggest creating a plan for exact figures.';
 
 export function describeEvent(plan) {
   const { input, summary, budget } = plan;
@@ -95,6 +104,19 @@ export function parseIdeasResponse(text) {
     }))
     .filter((idea) => idea.title && idea.detail)
     .slice(0, MAX_AI_IDEAS);
+}
+
+export function buildChatPrompt(plan, message) {
+  const question = `<question>${sanitizeForPrompt(message, MAX_QUESTION_LENGTH)}</question>`;
+  return plan ? `${describeEvent(plan)}\n\n${question}` : question;
+}
+
+// Earlier turns come from the browser, so they are treated as untrusted too.
+export function sanitizeHistory(history) {
+  return history
+    .slice(-MAX_HISTORY_TURNS)
+    .map((turn) => ({ role: turn.role, text: sanitizeForPrompt(turn.text, MAX_HISTORY_TEXT) }))
+    .filter((turn) => turn.text.length > 0);
 }
 
 export function cleanAnswer(text) {

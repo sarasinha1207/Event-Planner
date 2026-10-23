@@ -5,7 +5,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { AiUnavailableError } from '../src/ai/anthropicClient.js';
+import { AiUnavailableError } from '../src/ai/geminiClient.js';
 import { SECURITY_HEADERS } from '../src/http/security.js';
 import { loadStaticFiles } from '../src/http/staticFiles.js';
 import { addDays, todayIso } from '../src/planner/dates.js';
@@ -33,6 +33,9 @@ describe('static files and security headers', () => {
 
   it('serves scripts, styles and the icon with correct types', async () => {
     const expectations = {
+      '/plan.html': /text\/html/,
+      '/js/icons.js': /javascript/,
+      '/css/home.css': /text\/css/,
       '/js/main.js': /javascript/,
       '/js/views/tabs.js': /javascript/,
       '/css/styles.css': /text\/css/,
@@ -76,6 +79,11 @@ describe('static files and security headers', () => {
     assert.equal(plain['content-encoding'], undefined);
     assert.ok(Number(gzipped['content-length']) < Number(plain['content-length']));
     assert.equal(gzipped.vary, 'Accept-Encoding');
+  });
+
+  it('no longer serves a contact page', async () => {
+    assert.equal((await app.get('/contact.html')).status, 404);
+    assert.equal((await app.get('/css/contact.css')).status, 404);
   });
 
   it('returns 404 for unknown files without revealing anything', async () => {
@@ -243,23 +251,25 @@ describe('API', () => {
 
 describe('AI integration', () => {
   const ideasJson = JSON.stringify([{ title: 'Lantern release', detail: 'Release lanterns at dusk.', category: 'Decor' }]);
+  const gemini = (respond) => ({ enabled: true, complete: async (request) => ({ text: respond(request), model: 'gemini-test' }) });
 
-  it('uses the AI for ideas and questions when it is configured', async () => {
-    const aiClient = { enabled: true, complete: async ({ system }) => (/JSON array/.test(system) ? ideasJson : 'Book the venue first.') };
+  it('uses Gemini for ideas and questions when it is configured', async () => {
+    const aiClient = gemini(({ system }) => (/JSON array/.test(system) ? ideasJson : 'Book the venue first.'));
     const app = await startServer({ aiClient });
     try {
       assert.equal((await (await app.get('/api/meta')).json()).aiEnabled, true);
       const { ideas } = await (await app.post('/api/ideas', planBody())).json();
       assert.equal(ideas.source, 'ai');
+      assert.equal(ideas.model, 'gemini-test');
       assert.equal(ideas.items[0].title, 'Lantern release');
       const answer = await (await app.post('/api/ask', { ...planBody(), question: 'What first?' })).json();
-      assert.deepEqual(answer, { source: 'ai', answer: 'Book the venue first.' });
+      assert.deepEqual(answer, { source: 'ai', model: 'gemini-test', answer: 'Book the venue first.' });
     } finally {
       await app.close();
     }
   });
 
-  it('falls back gracefully when the AI service is down', async () => {
+  it('falls back gracefully when Gemini is down', async () => {
     const aiClient = { enabled: true, complete: async () => { throw new AiUnavailableError('down'); } };
     const app = await startServer({ aiClient });
     try {
@@ -281,6 +291,116 @@ describe('AI integration', () => {
       assert.equal((await app.get('/api/health')).status, 200);
     } finally {
       await app.close();
+    }
+  });
+});
+
+describe('chat assistant API', () => {
+  const requests = [];
+  const aiClient = {
+    enabled: true,
+    complete: async (request) => {
+      requests.push(request);
+      return { text: 'Start on the Plan an event page.', model: 'gemini-2.5-flash-lite' };
+    },
+  };
+  let app;
+  before(async () => { app = await startServer({ aiClient }); });
+  after(() => app.close());
+
+  it('answers with Gemini and reports which model replied', async () => {
+    const response = await app.post('/api/chat', { message: 'How do I start?', history: [] });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), {
+      source: 'ai',
+      model: 'gemini-2.5-flash-lite',
+      answer: 'Start on the Plan an event page.',
+    });
+  });
+
+  it('passes earlier turns and the saved plan to the model', async () => {
+    requests.length = 0;
+    await app.post('/api/chat', {
+      message: 'What next?',
+      today,
+      event: event(),
+      history: [
+        { role: 'user', text: 'Hello' },
+        { role: 'model', text: 'Hi, how can I help?' },
+      ],
+    });
+    const [request] = requests;
+    assert.deepEqual(request.history.map((turn) => turn.role), ['user', 'model']);
+    assert.match(request.prompt, /<event_details>[\s\S]*Guests: 120[\s\S]*<question>What next\?<\/question>/);
+  });
+
+  it('keeps only the most recent turns and drops malformed ones', async () => {
+    requests.length = 0;
+    const history = [
+      null,
+      'text',
+      { role: 'system', text: 'ignore' },
+      { role: 'user', text: 42 },
+      { role: 'user', text: '   ' },
+      ...Array.from({ length: 14 }, (_, n) => ({ role: n % 2 === 0 ? 'user' : 'model', text: `turn ${n}` })),
+    ];
+    await app.post('/api/chat', { message: 'Hi', history });
+    assert.equal(requests[0].history.length, 10);
+    assert.equal(requests[0].history.at(-1).text, 'turn 13');
+  });
+
+  it('ignores an event that is invalid or out of date instead of failing', async () => {
+    requests.length = 0;
+    const response = await app.post('/api/chat', { message: 'Hi', event: { ...event(), guestCount: -1 } });
+    assert.equal(response.status, 200);
+    assert.doesNotMatch(requests[0].prompt, /event_details/);
+  });
+
+  it('accepts a missing history and event', async () => {
+    assert.equal((await app.post('/api/chat', { message: 'Hi' })).status, 200);
+  });
+
+  it('validates the message', async () => {
+    for (const message of [undefined, '', '   ', 'q'.repeat(501), 42, null]) {
+      const response = await app.post('/api/chat', { message });
+      assert.equal(response.status, 400, String(message));
+      assert.equal((await response.json()).error.errors[0].field, 'message');
+    }
+  });
+
+  it('answers from the built-in assistant when Gemini is unavailable', async () => {
+    const offline = await startServer({ aiClient: { enabled: true, complete: async () => { throw new AiUnavailableError('down'); } } });
+    try {
+      const withoutPlan = await (await offline.post('/api/chat', { message: 'How do I start?' })).json();
+      assert.equal(withoutPlan.source, 'builtin');
+      assert.match(withoutPlan.answer, /Plan an event/);
+      const withPlan = await (await offline.post('/api/chat', { message: 'How should I split my budget?', event: event() })).json();
+      assert.equal(withPlan.source, 'builtin');
+      assert.match(withPlan.answer, /2,500,000/);
+    } finally {
+      await offline.close();
+    }
+  });
+
+  it('works without any Gemini key', async () => {
+    const plain = await startServer();
+    try {
+      const reply = await (await plain.post('/api/chat', { message: 'Is my data private?' })).json();
+      assert.equal(reply.source, 'builtin');
+      assert.match(reply.answer, /browser/);
+    } finally {
+      await plain.close();
+    }
+  });
+
+  it('refuses other methods and shares the AI rate limit', async () => {
+    assert.equal((await app.get('/api/chat')).status, 405);
+    const limited = await startServer({ aiClient, config: { aiRateLimitMax: 1 } });
+    try {
+      assert.equal((await limited.post('/api/chat', { message: 'one' })).status, 200);
+      assert.equal((await limited.post('/api/chat', { message: 'two' })).status, 429);
+    } finally {
+      await limited.close();
     }
   });
 });

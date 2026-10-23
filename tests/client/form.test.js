@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import { before, describe, it } from 'node:test';
 import { h } from '../../public/js/dom.js';
+import { PIECES, launchConfetti } from '../../public/js/confetti.js';
+import { openConfirm } from '../../public/js/confirmDialog.js';
+import { markStep } from '../../public/js/stepper.js';
 import { downloadTextFile } from '../../public/js/download.js';
 import { pickLocale } from '../../public/js/format.js';
 import { applyLimits, clearErrors, readEvent, renderPriorities, showErrors, writeEvent } from '../../public/js/formView.js';
@@ -239,5 +242,78 @@ describe('results view', () => {
     const { results } = build({ meta: { aiEnabled: false, limits: { questionMax: 500 } } });
     const root = h('div', {}, ...results.nodes);
     assert.equal(byTag(root, 'button').some((button) => button.textContent === 'Generate ideas with AI'), false);
+  });
+});
+
+describe('confetti', () => {
+  it('adds a decorative layer of pieces and removes it later', () => {
+    const appended = [];
+    globalThis.document.body = { append: (node) => appended.push(node) };
+    const scheduled = [];
+    const layer = launchConfetti({ reducedMotion: false, random: () => 0.5, schedule: (fn, ms) => scheduled.push([fn, ms]) });
+
+    assert.equal(appended[0], layer);
+    assert.equal(layer.getAttribute('aria-hidden'), 'true');
+    assert.equal(layer.children.length, PIECES);
+    assert.ok(layer.children.every((piece) => piece.styles.has('--x') && piece.styles.has('--duration')));
+    assert.deepEqual(new Set(layer.children.map((piece) => piece.className.split(' ')[1])).size, 5);
+
+    let removed = false;
+    layer.remove = () => { removed = true; };
+    scheduled[0][0]();
+    assert.equal(removed, true);
+    assert.ok(scheduled[0][1] > 3000);
+  });
+
+  it('does nothing for visitors who prefer reduced motion', () => {
+    let touched = false;
+    globalThis.document.body = { append: () => { touched = true; } };
+    assert.equal(launchConfetti({ reducedMotion: true }), null);
+    assert.equal(touched, false);
+  });
+
+  it('detects the reduced motion preference from the browser', () => {
+    globalThis.matchMedia = () => ({ matches: true });
+    assert.equal(launchConfetti(), null);
+    delete globalThis.matchMedia;
+    globalThis.document.body = { append() {} };
+    assert.ok(launchConfetti({ schedule: () => {} }));
+  });
+});
+
+describe('stepper and confirmation dialog', () => {
+  it('marks the current step and completed steps', () => {
+    const list = h('ol', {}, h('li'), h('li'), h('li'));
+    markStep(list, 2);
+    const [first, second, third] = list.children;
+    assert.equal(first.classes.has('is-complete'), true);
+    assert.equal(first.getAttribute('aria-current'), null);
+    assert.equal(second.getAttribute('aria-current'), 'step');
+    assert.equal(third.classes.has('is-complete'), false);
+
+    markStep(list, 1);
+    assert.equal(first.getAttribute('aria-current'), 'step');
+    assert.equal(second.getAttribute('aria-current'), null);
+    assert.equal(first.classes.has('is-complete'), false);
+  });
+
+  it('opens the native dialog when it is supported', () => {
+    const dialog = { returnValue: 'confirm', open: false, showModal() { this.open = true; } };
+    let confirmed = false;
+    openConfirm(dialog, 'Sure?', () => { confirmed = true; });
+    assert.equal(dialog.open, true);
+    assert.equal(dialog.returnValue, '');
+    assert.equal(confirmed, false);
+  });
+
+  it('falls back to window.confirm without dialog support', () => {
+    const calls = [];
+    globalThis.window = { confirm: (message) => { calls.push(message); return calls.length === 1; } };
+    let confirmed = 0;
+    openConfirm({}, 'Sure?', () => { confirmed += 1; });
+    openConfirm({}, 'Sure?', () => { confirmed += 1; });
+    assert.deepEqual(calls, ['Sure?', 'Sure?']);
+    assert.equal(confirmed, 1);
+    delete globalThis.window;
   });
 });

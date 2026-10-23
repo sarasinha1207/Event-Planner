@@ -430,3 +430,16 @@ describe('tabs', () => {
     assert.deepEqual(state(tabs).selected, ['false', 'true', 'false']);
   });
 });
+
+describe('budget share bars', () => {
+  it('draws a decorative bar per category scaled to the largest share', () => {
+    const { element } = createBudgetView({ plan, progress: emptyProgress(), locale: 'en', onSpentChange: noop });
+    const bars = byClass(element, 'bar');
+    const fills = byClass(element, 'bar-fill');
+    assert.equal(bars.length, plan.budget.lines.length);
+    assert.ok(bars.every((bar) => bar.getAttribute('aria-hidden') === 'true'));
+    const values = fills.map((fill) => Number(fill.styles.get('--fill')));
+    assert.equal(Math.max(...values), 100);
+    assert.ok(values.every((value) => value > 0 && value <= 100));
+  });
+});

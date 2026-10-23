@@ -2,6 +2,7 @@
 
 import { h } from './dom.js';
 import { formatDate, pluralize } from './format.js';
+import { icon } from './icons.js';
 import { setSpent, setStepDone, setTaskDone } from './progress.js';
 import { createAskView } from './views/ask.js';
 import { createBudgetView } from './views/budget.js';
@@ -11,8 +12,8 @@ import { createTabs } from './views/tabs.js';
 import { createTimelineView } from './views/timeline.js';
 import { createVendorsView } from './views/vendors.js';
 
-function actionButton(label, onClick) {
-  return h('button', { type: 'button', class: 'button button-secondary', text: label, on: { click: onClick } });
+function actionButton(label, iconName, onClick) {
+  return h('button', { type: 'button', class: 'button button-secondary', on: { click: onClick } }, icon(iconName), h('span', { text: label }));
 }
 
 // `actions` supplies what the views cannot do themselves:
@@ -59,11 +60,11 @@ export function buildResults({ plan, progress, meta, today, locale, actions }) {
   const tabs = createTabs({
     label: 'Plan sections',
     tabs: [
-      { id: 'budget', label: 'Budget', content: budget.element },
-      { id: 'timeline', label: 'Timeline', content: timeline.element },
-      { id: 'vendors', label: 'Vendors', content: vendors.element },
-      { id: 'ideas', label: 'Ideas', content: ideas.element },
-      { id: 'ask', label: 'Ask the planner', content: ask.element },
+      { id: 'budget', label: 'Budget', icon: 'budget', content: budget.element },
+      { id: 'timeline', label: 'Timeline', icon: 'calendar', content: timeline.element },
+      { id: 'vendors', label: 'Vendors', icon: 'checklist', content: vendors.element },
+      { id: 'ideas', label: 'Ideas', icon: 'lightbulb', content: ideas.element },
+      { id: 'ask', label: 'Ask the planner', icon: 'message', content: ask.element },
     ],
   });
 
@@ -76,9 +77,9 @@ export function buildResults({ plan, progress, meta, today, locale, actions }) {
     h(
       'div',
       { class: 'action-row no-print' },
-      actionButton('Download as text', actions.onDownload),
-      actionButton('Print', actions.onPrint),
-      actionButton('Edit details', actions.onEditDetails),
+      actionButton('Download as text', 'download', actions.onDownload),
+      actionButton('Print', 'print', actions.onPrint),
+      actionButton('Edit details', 'edit', actions.onEditDetails),
     ),
     tabs.element,
   ];

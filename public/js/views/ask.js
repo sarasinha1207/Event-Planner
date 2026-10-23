@@ -18,7 +18,7 @@ export function createAskView({ maxLength, onAsk }) {
   function showAnswer({ answer: text, source }) {
     answer.replaceChildren(
       h('p', { class: 'answer-text', text }),
-      h('p', { class: 'source-note', text: source === 'ai' ? 'Answered by the AI assistant.' : 'Answered by the built-in planner.' }),
+      h('p', { class: 'source-note', text: source === 'ai' ? 'Answered by the Gemini AI assistant.' : 'Answered by the built-in planner.' }),
     );
   }
 

@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { describe, it } from 'node:test';
-import { loadConfig } from '../../src/config.js';
+import { DEFAULT_GEMINI_MODELS, loadConfig } from '../../src/config.js';
 import { readJsonBody } from '../../src/http/body.js';
 import { HttpError } from '../../src/http/errors.js';
 import { createRateLimiter } from '../../src/http/rateLimiter.js';
 import { createRouter } from '../../src/http/router.js';
 import { SECURITY_HEADERS, applySecurityHeaders } from '../../src/http/security.js';
+import { loadDotEnv } from '../../src/env.js';
 import { createLogger, silentLogger } from '../../src/logger.js';
 
 function fakeRequest(body, headers = { 'content-type': 'application/json' }) {
@@ -129,17 +130,33 @@ describe('config', () => {
     const config = loadConfig({});
     assert.equal(config.port, 3000);
     assert.equal(config.host, '127.0.0.1');
-    assert.equal(config.anthropicApiKey, '');
-    assert.equal(config.anthropicModel, 'claude-sonnet-5-5');
+    assert.equal(config.geminiApiKey, '');
+    assert.deepEqual([...config.geminiModels], [...DEFAULT_GEMINI_MODELS]);
+    assert.ok(config.geminiModels.length >= 3, 'several models are available for failover');
     assert.ok(config.aiRateLimitMax < config.rateLimitMax);
   });
 
   it('reads overrides and trims the key', () => {
-    const config = loadConfig({ PORT: '8080', HOST: '0.0.0.0', ANTHROPIC_API_KEY: '  key  ', AI_RATE_LIMIT_MAX: '3' });
+    const config = loadConfig({ PORT: '8080', HOST: '0.0.0.0', GEMINI_API_KEY: '  key  ', AI_RATE_LIMIT_MAX: '3' });
     assert.equal(config.port, 8080);
     assert.equal(config.host, '0.0.0.0');
-    assert.equal(config.anthropicApiKey, 'key');
+    assert.equal(config.geminiApiKey, 'key');
     assert.equal(config.aiRateLimitMax, 3);
+  });
+
+  it('reads a custom list of Gemini models in order and removes duplicates', () => {
+    const config = loadConfig({ GEMINI_MODELS: ' gemini-a , gemini-b,gemini-a ,gemini-c ' });
+    assert.deepEqual([...config.geminiModels], ['gemini-a', 'gemini-b', 'gemini-c']);
+  });
+
+  it('rejects model names that could change the request URL', () => {
+    for (const GEMINI_MODELS of ['gemini/../x', 'a b', 'ok,../../etc', 'x?key=1', ',']) {
+      assert.throws(() => loadConfig({ GEMINI_MODELS }), /GEMINI_MODELS/, GEMINI_MODELS);
+    }
+  });
+
+  it('treats an empty model list as unset', () => {
+    assert.deepEqual([...loadConfig({ GEMINI_MODELS: '  ' }).geminiModels], [...DEFAULT_GEMINI_MODELS]);
   });
 
   it('treats empty values as unset', () => {
@@ -178,5 +195,24 @@ describe('logger', () => {
       silentLogger.warn('x');
       silentLogger.error('x');
     });
+  });
+});
+
+describe('dot env file', () => {
+  it('loads the file it is given', () => {
+    const loaded = [];
+    assert.equal(loadDotEnv('/some/.env', (file) => loaded.push(file)), true);
+    assert.deepEqual(loaded, ['/some/.env']);
+  });
+
+  it('treats a missing file as normal', () => {
+    assert.equal(loadDotEnv('/missing/.env', () => { throw new Error('ENOENT'); }), false);
+  });
+
+  it('points at the .env file in the project root by default', () => {
+    const seen = [];
+    loadDotEnv(undefined, (file) => seen.push(file));
+    assert.match(seen[0], /\.env$/);
+    assert.doesNotMatch(seen[0], /src[\\/]\.env$/);
   });
 });

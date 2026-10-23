@@ -1,23 +1,26 @@
 import { createApp } from './src/app.js';
-import { createAnthropicClient } from './src/ai/anthropicClient.js';
+import { createGeminiClient } from './src/ai/geminiClient.js';
 import { loadConfig } from './src/config.js';
+import { loadDotEnv } from './src/env.js';
 import { createLogger } from './src/logger.js';
 
 const SHUTDOWN_GRACE_MS = 5000;
 
 const logger = createLogger();
+loadDotEnv();
 const config = loadConfig();
-const aiClient = createAnthropicClient({
-  apiKey: config.anthropicApiKey,
-  model: config.anthropicModel,
+const aiClient = createGeminiClient({
+  apiKey: config.geminiApiKey,
+  models: config.geminiModels,
   timeoutMs: config.aiTimeoutMs,
+  logger,
 });
 
 const server = await createApp({ config, aiClient, logger });
 
 server.listen(config.port, config.host, () => {
   const { port } = server.address();
-  logger.info('listening', { url: `http://${config.host}:${port}`, ai: aiClient.enabled });
+  logger.info('listening', { url: `http://${config.host}:${port}`, ai: aiClient.enabled, models: config.geminiModels });
 });
 
 function shutdown(signal) {

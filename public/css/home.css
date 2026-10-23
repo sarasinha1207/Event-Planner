@@ -1,0 +1,428 @@
+/* Styles used only by the home page. Colours come from the tokens defined in
+   styles.css so the contrast tests cover them. */
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-0.7rem);
+  }
+}
+
+.hero {
+  display: flex;
+  align-items: center;
+  min-height: clamp(32rem, 78vh, 48rem);
+  padding-block: clamp(4rem, 10vw, 7rem);
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.hero-actions .button {
+  min-height: 3rem;
+  padding-inline: 1.6rem;
+}
+
+.hero-actions .button-light:hover .inline-icon {
+  transform: translateX(4px);
+}
+
+.hero-actions .inline-icon {
+  transition: transform 0.3s var(--ease);
+}
+
+/* Decorative preview cards beside the hero text */
+
+.hero-visual {
+  display: grid;
+  gap: 0.9rem;
+  justify-items: start;
+}
+
+@media (min-width: 60rem) {
+  .hero-visual {
+    justify-items: end;
+  }
+}
+
+.mock-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: min(100%, 21rem);
+  padding: 0.85rem 1rem;
+  color: var(--on-hero);
+  border: 1px solid rgb(255 255 255 / 38%);
+  border-radius: 1rem;
+  background: rgb(255 255 255 / 15%);
+  box-shadow: 0 14px 32px rgb(0 0 0 / 22%);
+  animation: fade-up 0.8s var(--ease) both, float 6s ease-in-out infinite;
+}
+
+.mock-card .icon-badge {
+  width: 2.7rem;
+  height: 2.7rem;
+  font-size: 1.15rem;
+  background: rgb(255 255 255 / 24%);
+  box-shadow: none;
+}
+
+.mock-card-1 {
+  animation-delay: 0.3s, 0s;
+}
+
+.mock-card-2 {
+  animation-delay: 0.45s, -1.5s;
+}
+
+.mock-card-3 {
+  animation-delay: 0.6s, -3s;
+}
+
+.mock-card-4 {
+  animation-delay: 0.75s, -4.5s;
+}
+
+@media (min-width: 60rem) {
+  .mock-card-1 {
+    margin-right: 2.5rem;
+  }
+
+  .mock-card-3 {
+    margin-right: 3rem;
+  }
+
+  .mock-card-4 {
+    margin-right: 1rem;
+  }
+}
+
+.mock-text {
+  display: grid;
+  flex: 1;
+  line-height: 1.3;
+}
+
+.mock-text span {
+  font-size: 0.9rem;
+}
+
+.mock-bar {
+  flex: none;
+  width: 3rem;
+  height: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 28%);
+}
+
+.mock-bar span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--gold);
+  transform-origin: left;
+  animation: bar-grow 1.4s 0.9s var(--ease) both;
+}
+
+.mock-bar-1 span {
+  width: 85%;
+}
+
+.mock-bar-2 span {
+  width: 60%;
+}
+
+.mock-bar-3 span {
+  width: 40%;
+}
+
+.mock-bar-4 span {
+  width: 70%;
+}
+
+/* Sections */
+
+.section {
+  padding-block: clamp(3rem, 7vw, 5rem);
+  scroll-margin-top: 4.5rem;
+}
+
+.section-tinted {
+  background: var(--surface-alt);
+}
+
+.section-heading {
+  max-width: 40rem;
+  margin-bottom: 2rem;
+}
+
+.section-eyebrow {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.section h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+}
+
+/* A section whose heading and content are centred on the page */
+
+.section-centered .section-heading {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.section-centered .faq-list {
+  margin-inline: auto;
+}
+
+/* About */
+
+.about-grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (min-width: 56rem) {
+  .about-grid {
+    grid-template-columns: 1.3fr 1fr;
+  }
+}
+
+.about-grid p {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+}
+
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fact-grid li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: 0.3rem solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s;
+}
+
+.fact-grid li:nth-child(2) {
+  border-bottom-color: var(--accent);
+}
+
+.fact-grid li:nth-child(3) {
+  border-bottom-color: var(--success);
+}
+
+.fact-grid li:nth-child(4) {
+  border-bottom-color: var(--primary-2);
+}
+
+.fact-grid li:hover {
+  transform: translateY(-4px) rotate(-1deg);
+  box-shadow: var(--shadow-lift);
+}
+
+.fact-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  margin-bottom: 0.6rem;
+  font-size: 1.15rem;
+  border-radius: 0.75rem;
+}
+
+.fact-grid li:hover .fact-icon {
+  transform: rotate(-10deg) scale(1.12);
+}
+
+.fact-grid strong {
+  font-family: var(--font-display);
+  font-size: 2.4rem;
+  line-height: 1.1;
+  color: var(--primary);
+}
+
+.fact-grid span:not(.fact-icon) {
+  color: var(--text-muted);
+}
+
+/* How it works */
+
+.steps-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step-card {
+  position: relative;
+  padding: 1.5rem 1.25rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s;
+}
+
+.step-card:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--shadow-lift);
+}
+
+.step-card p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.step-card .step-label {
+  margin: 0.9rem 0 0.1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.step-card:hover .step-badge,
+.feature-card:hover .icon-badge {
+  transform: rotate(-8deg) scale(1.1);
+}
+
+/* Features */
+
+.feature-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.feature-card {
+  padding: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.3s var(--ease), box-shadow 0.3s, border-color 0.3s;
+}
+
+.feature-card .icon-badge {
+  margin-bottom: 0.9rem;
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+  border-color: var(--primary);
+  box-shadow: var(--shadow-lift);
+}
+
+.feature-card p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* Frequently asked questions */
+
+.faq-list {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 56rem;
+}
+
+.faq {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.faq:hover,
+.faq[open] {
+  border-color: var(--primary);
+  box-shadow: var(--shadow);
+}
+
+.faq summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 3rem;
+  padding: 0.8rem 1.1rem;
+  font-weight: 700;
+  list-style: none;
+  cursor: pointer;
+}
+
+.faq summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq summary::after {
+  content: "";
+  flex: none;
+  width: 0.65rem;
+  height: 0.65rem;
+  margin-right: 0.25rem;
+  border-right: 3px solid var(--primary);
+  border-bottom: 3px solid var(--primary);
+  transform: rotate(45deg);
+  transition: transform 0.3s var(--ease);
+}
+
+.faq[open] summary::after {
+  transform: rotate(-135deg);
+}
+
+.faq p {
+  margin: 0;
+  padding: 0 1.1rem 1.1rem;
+  color: var(--text-muted);
+  animation: fade-up 0.4s var(--ease) both;
+}
+
+/* Elements fade up as they scroll into view, where the browser supports it. */
+
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: fade-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 35%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}

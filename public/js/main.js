@@ -1,4 +1,6 @@
 import { createApi, toFieldErrors } from './api.js';
+import { launchConfetti } from './confetti.js';
+import { openConfirm } from './confirmDialog.js';
 import { downloadTextFile } from './download.js';
 import { h } from './dom.js';
 import { fileSlug, planToText } from './exportText.js';
@@ -6,6 +8,7 @@ import { applyLimits, clearErrors, readEvent, renderPriorities, showErrors, writ
 import { localTodayIso, pickLocale } from './format.js';
 import { emptyProgress, reconcileProgress } from './progress.js';
 import { buildResults } from './resultsView.js';
+import { markStep } from './stepper.js';
 import { browserStorage, createStore } from './store.js';
 
 const api = createApi();
@@ -21,11 +24,12 @@ const els = {
   submit: byId('submit-button'),
   clear: byId('clear-button'),
   priorityOptions: byId('priority-options'),
-  emptyState: byId('empty-state'),
+  info: byId('info-panel'),
   results: byId('results'),
   resultsHeading: byId('results-heading'),
   resultsBody: byId('results-body'),
   dialog: byId('confirm-dialog'),
+  steps: byId('stepper'),
 };
 
 const locale = pickLocale(navigator.language);
@@ -92,6 +96,7 @@ function renderResults({ focus }) {
     actions: {
       onProgressChange: (progress) => {
         state.progress = progress;
+        markStep(els.steps, 3);
         persist();
       },
       onRequestAiIdeas: requestAiIdeas,
@@ -107,9 +112,9 @@ function renderResults({ focus }) {
 
   els.resultsHeading.textContent = state.plan.input.eventName;
   els.resultsBody.replaceChildren(...state.views.nodes);
-  els.emptyState.hidden = true;
   els.results.hidden = false;
   els.clear.hidden = false;
+  markStep(els.steps, 2);
   if (focus) els.resultsHeading.focus();
 }
 
@@ -121,8 +126,8 @@ function resetToEmpty() {
   clearErrors(els.form, els.errorSummary);
   refreshPriorities();
   els.results.hidden = true;
-  els.emptyState.hidden = false;
   els.clear.hidden = true;
+  markStep(els.steps, 1);
   announce('Saved plan cleared.');
   // The dialog is still closing, and it would move focus back to the button that opened it.
   setTimeout(() => els.formHeading.focus(), 0);
@@ -139,20 +144,12 @@ async function handleSubmit(event) {
     state.progress = reconcileProgress(state.progress, plan);
     persist();
     renderResults({ focus: true });
+    launchConfetti();
     announce(`Plan created for ${plan.input.eventName}.`);
   } catch (error) {
     showErrors(els.form, els.errorSummary, toFieldErrors(error));
   } finally {
     setBusy(false);
-  }
-}
-
-function confirmClear() {
-  if (typeof els.dialog.showModal === 'function') {
-    els.dialog.returnValue = '';
-    els.dialog.showModal();
-  } else if (window.confirm('Clear your saved plan? This cannot be undone.')) {
-    resetToEmpty();
   }
 }
 
@@ -172,7 +169,7 @@ async function init() {
   try {
     state.meta = await api.getMeta();
   } catch (error) {
-    els.emptyState.append(h('p', { class: 'notice', role: 'alert', text: error.message }));
+    els.info.append(h('p', { class: 'notice', role: 'alert', text: error.message }));
     return;
   }
 
@@ -182,7 +179,7 @@ async function init() {
 
   els.form.addEventListener('submit', handleSubmit);
   els.form.elements.eventType.forEach((radio) => radio.addEventListener('change', () => refreshPriorities()));
-  els.clear.addEventListener('click', confirmClear);
+  els.clear.addEventListener('click', () => openConfirm(els.dialog, 'Clear your saved plan? This cannot be undone.', resetToEmpty));
   byId('confirm-yes').addEventListener('click', resetToEmpty);
 
   // Collapsed vendor sections would be missing from a printout, so open them.

@@ -28,6 +28,8 @@ export class FakeElement {
     this.checked = false;
     this.value = '';
     this.focused = false;
+    this.styles = new Map();
+    this.style = { setProperty: (name, value) => this.styles.set(name, value) };
   }
 
   get className() {
@@ -55,6 +57,7 @@ export class FakeElement {
 
   setAttribute(name, value) {
     this.attributes.set(name, String(value));
+    if (name === 'class') this.className = value;
   }
 
   getAttribute(name) {
@@ -143,7 +146,14 @@ export class FakeElement {
 }
 
 export function installFakeDocument() {
-  globalThis.document = { createElement: (tag) => new FakeElement(tag) };
+  globalThis.document = {
+    createElement: (tag) => new FakeElement(tag),
+    createElementNS: (namespace, tag) => {
+      const element = new FakeElement(tag);
+      element.namespace = namespace;
+      return element;
+    },
+  };
 }
 
 export function findAll(root, predicate, found = []) {

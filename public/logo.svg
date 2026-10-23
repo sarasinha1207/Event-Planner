@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 330 64" width="330" height="64" role="img" aria-label="Celebration Planner">
+  <defs>
+    <linearGradient id="badge" x1="6" y1="2" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#3b25c9"/>
+      <stop offset="0.55" stop-color="#8e24c9"/>
+      <stop offset="1" stop-color="#e0457b"/>
+    </linearGradient>
+    <linearGradient id="spark" x1="23" y1="29" x2="41" y2="47" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e0457b"/>
+      <stop offset="1" stop-color="#4b2fd0"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <rect width="64" height="64" rx="16" fill="url(#badge)"/>
+    <circle cx="14" cy="10" r="26" fill="#ffffff" fill-opacity="0.10"/>
+    <rect x="13" y="17" width="38" height="34" rx="8" fill="#ffffff"/>
+    <path d="M13 25a8 8 0 0 1 8-8h22a8 8 0 0 1 8 8v2H13z" fill="#ede9ff"/>
+    <rect x="21" y="11" width="5" height="11" rx="2.5" fill="#ffc233"/>
+    <rect x="38" y="11" width="5" height="11" rx="2.5" fill="#ffc233"/>
+    <path d="M32 29l2.8 6.2L41 38l-6.2 2.8L32 47l-2.8-6.2L23 38l6.2-2.8z" fill="url(#spark)"/>
+    <circle cx="45" cy="44" r="1.8" fill="#19c3b1"/>
+    <circle cx="19" cy="45" r="1.5" fill="#ff6b4a"/>
+  </g>
+  <text x="80" y="29" font-family="Georgia, 'Times New Roman', serif" font-size="27" font-weight="700" fill="#1b1740">Celebration</text>
+  <text x="80" y="55" font-family="Georgia, 'Times New Roman', serif" font-size="27" font-weight="700" fill="#4b2fd0">Planner</text>
+  <path d="M206 49h112" stroke="#e0457b" stroke-width="3" stroke-linecap="round" stroke-opacity="0.55"/>
+</svg>

@@ -15,6 +15,15 @@ export function createBudgetView({ plan, progress, locale, onSpentChange }) {
     return over ? `Over by ${money(-remaining)}` : `${money(remaining)} left`;
   }
 
+  const largestShare = Math.max(...plan.budget.lines.map((line) => line.share));
+
+  // A thin bar showing each category's share relative to the largest one.
+  function shareBar(line) {
+    const fill = h('span', { class: 'bar-fill' });
+    fill.style.setProperty('--fill', String(Math.round((line.share / largestShare) * 100)));
+    return h('span', { class: 'bar', 'aria-hidden': 'true' }, fill);
+  }
+
   const rows = plan.budget.lines.map((line) => {
     const remainingCell = h('td', { 'data-label': 'Remaining' });
     const input = h('input', {
@@ -55,7 +64,7 @@ export function createBudgetView({ plan, progress, locale, onSpentChange }) {
         h('span', { class: 'cell-hint', text: line.hint }),
       ),
       h('td', { 'data-label': 'Share', text: `${line.share}%` }),
-      h('td', { 'data-label': 'Planned' }, h('span', { text: money(line.amount) })),
+      h('td', { 'data-label': 'Planned' }, h('span', { text: money(line.amount) }), shareBar(line)),
       h('td', { 'data-label': 'Spent' }, input),
       remainingCell,
     );

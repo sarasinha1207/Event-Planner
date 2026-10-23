@@ -1,24 +1,27 @@
-import { answerLocally } from '../planner/assistant.js';
+import { answerGeneral, answerLocally } from '../planner/assistant.js';
 import { selectIdeas } from '../planner/ideas.js';
 import { getEventType } from '../planner/eventTypes.js';
 import {
   ASK_SYSTEM_PROMPT,
+  CHAT_SYSTEM_PROMPT,
   IDEAS_SYSTEM_PROMPT,
   buildAskPrompt,
+  buildChatPrompt,
   buildIdeasPrompt,
   cleanAnswer,
   parseIdeasResponse,
+  sanitizeHistory,
 } from './prompts.js';
 import { createTtlCache } from './cache.js';
 
 const IDEAS_MAX_TOKENS = 1200;
-const ASK_MAX_TOKENS = 500;
+const ANSWER_MAX_TOKENS = 600;
 const CACHE_MAX_ENTRIES = 100;
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-// Combines the AI client with the built-in planner. Every method returns a
-// usable result: when the model is unavailable or answers badly, the built-in
-// planner answers instead and the `source` field says which one did.
+// Combines the Gemini client with the built-in planner. Every method returns a
+// usable result: when no model can answer, or an answer is unusable, the
+// built-in planner answers instead and `source` says which one did.
 export function createAssistantService({ aiClient, logger, now = Date.now }) {
   const ideasCache = createTtlCache({ maxEntries: CACHE_MAX_ENTRIES, ttlMs: CACHE_TTL_MS, now });
 
@@ -37,15 +40,15 @@ export function createAssistantService({ aiClient, logger, now = Date.now }) {
     const cached = ideasCache.get(cacheKey);
     if (cached) return cached;
 
-    const text = await tryAi({
+    const reply = await tryAi({
       system: IDEAS_SYSTEM_PROMPT,
       prompt: buildIdeasPrompt(plan),
       maxTokens: IDEAS_MAX_TOKENS,
     });
-    const aiIdeas = text ? parseIdeasResponse(text) : [];
+    const aiIdeas = reply ? parseIdeasResponse(reply.text) : [];
 
     if (aiIdeas.length > 0) {
-      const result = { source: 'ai', items: aiIdeas };
+      const result = { source: 'ai', model: reply.model, items: aiIdeas };
       ideasCache.set(cacheKey, result);
       return result;
     }
@@ -54,14 +57,27 @@ export function createAssistantService({ aiClient, logger, now = Date.now }) {
   }
 
   async function answerQuestion(plan, question, today) {
-    const text = await tryAi({
+    const reply = await tryAi({
       system: ASK_SYSTEM_PROMPT,
       prompt: buildAskPrompt(plan, question),
-      maxTokens: ASK_MAX_TOKENS,
+      maxTokens: ANSWER_MAX_TOKENS,
     });
-    if (text) return { source: 'ai', answer: cleanAnswer(text) };
+    if (reply) return { source: 'ai', model: reply.model, answer: cleanAnswer(reply.text) };
     return { source: 'builtin', answer: answerLocally(question, plan, today) };
   }
 
-  return { enabled: aiClient.enabled, generateIdeas, answerQuestion };
+  // The floating chat assistant. `plan` is null when the visitor has no saved plan.
+  async function chat({ plan, message, history, today }) {
+    const reply = await tryAi({
+      system: CHAT_SYSTEM_PROMPT,
+      prompt: buildChatPrompt(plan, message),
+      history: sanitizeHistory(history),
+      maxTokens: ANSWER_MAX_TOKENS,
+    });
+    if (reply) return { source: 'ai', model: reply.model, answer: cleanAnswer(reply.text) };
+    const answer = plan ? answerLocally(message, plan, today) : answerGeneral(message);
+    return { source: 'builtin', answer };
+  }
+
+  return { enabled: aiClient.enabled, generateIdeas, answerQuestion, chat };
 }

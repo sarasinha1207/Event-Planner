@@ -14,11 +14,12 @@ The suite uses `node:test` and `node:assert`, so nothing needs to be installed. 
 | Area | Files | What is checked |
 | --- | --- | --- |
 | Planner logic | `tests/planner/*` | Date arithmetic; every validation rule and edge case; budget totals for all event types at many sizes; priority behaviour; timeline compression, ordering and bounds; idea selection, eligibility and ranking; integrity of the event data; local question answering |
-| AI | `tests/ai/*` | Request shape and headers; every failure mode (network, status, unreadable, empty); fallbacks; caching; prompt delimiting and injection attempts; defensive parsing of model output |
+| AI | `tests/ai/*` | Gemini request shape and key placement; model failover for quota, overload, retired, forbidden, network, empty and unreadable responses; cooldowns, recovery and `Retry-After`; the overall time budget; rejected keys; fallbacks; caching; prompt delimiting and injection attempts; defensive parsing of model output; chat history handling |
 | HTTP units | `tests/http/units.test.js` | Rate limiter windows; body reader limits and content types; router 404 and 405; security headers; configuration parsing; logging |
 | Server, end to end | `tests/server.test.js` | The real server on a random port: every endpoint, validation errors, content type, malformed and oversized bodies, rate limiting, path traversal attempts, compression, ETags, error hygiene and log content |
 | Client logic | `tests/client/core.test.js` | Formatting; progress calculations; saved-data validation and recovery from corrupt storage; API client behaviour; text export |
 | Client views | `tests/client/views.test.js`, `tests/client/form.test.js` | Tabs keyboard behaviour; budget, timeline, vendor, idea and question views; form reading, writing and error display; results assembly; safe rendering of hostile text |
+| Chat assistant | `tests/client/chatbot.test.js` | Launcher and dialog attributes, opening, closing and Escape, focus handling, sending with history and the saved plan, typing indicator, error handling, persistence for the tab, new chat, safe rendering of replies, and the chat API call |
 | Accessibility | `tests/quality/accessibility.test.js` | Page structure, labels, ids, headings, error handling hooks, stylesheet rules |
 | Contrast | `tests/quality/contrast.test.js` | WCAG contrast ratios for every colour pairing in both themes |
 | Hygiene | `tests/quality/hygiene.test.js` | No emoji, plain ASCII documents, required documents exist, no unsafe DOM calls, no inline code, no credentials, no console logging, file size limit |

@@ -54,5 +54,6 @@ export function createApi(fetchImpl = globalThis.fetch.bind(globalThis)) {
     createPlan: (event, today) => request('/api/plan', { event, today }),
     requestIdeas: (event, today) => request('/api/ideas', { event, today }),
     ask: (event, today, question) => request('/api/ask', { event, today, question }),
+    chat: (message, history, event, today) => request('/api/chat', { message, history, event, today }),
   };
 }

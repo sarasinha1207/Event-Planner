@@ -39,7 +39,7 @@ describe('project conventions', () => {
 
   it('documents how to run and test the project', () => {
     const readme = read('README.md');
-    for (const phrase of ['npm start', 'npm test', 'ANTHROPIC_API_KEY', 'docs/SECURITY.md']) {
+    for (const phrase of ['npm start', 'npm test', 'GEMINI_API_KEY', 'docs/SECURITY.md']) {
       assert.ok(readme.includes(phrase), phrase);
     }
   });
@@ -59,12 +59,16 @@ describe('security hygiene', () => {
   });
 
   it('uses no inline scripts, styles, event handlers or third-party origins in the page', () => {
-    const html = read('public', 'index.html');
-    assert.doesNotMatch(html, /\son[a-z]+\s*=/i);
-    assert.doesNotMatch(html, /\sstyle\s*=/i);
-    assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)[^>]*>/i);
-    assert.doesNotMatch(html, /(?:src|href)\s*=\s*"(?:https?:)?\/\//i);
-    assert.doesNotMatch(read('public', 'css', 'styles.css'), /@import|url\(\s*["']?https?:/i);
+    for (const page of ['index.html', 'plan.html']) {
+      const html = read('public', page);
+      assert.doesNotMatch(html, /\son[a-z]+\s*=/i, page);
+      assert.doesNotMatch(html, /\sstyle\s*=/i, page);
+      assert.doesNotMatch(html, /<script(?![^>]*\ssrc=)[^>]*>/i, page);
+      assert.doesNotMatch(html, /(?:src|href)\s*=\s*"(?:https?:)?\/\//i, page);
+    }
+    for (const sheet of ['styles.css', 'home.css']) {
+      assert.doesNotMatch(read('public', 'css', sheet), /@import|url\(\s*["']?https?:/i, sheet);
+    }
   });
 
   it('does not set inline styles from scripts through attributes', () => {
@@ -75,13 +79,28 @@ describe('security hygiene', () => {
 
   it('contains no embedded credentials', () => {
     for (const file of sourceFiles.concat(files.filter((candidate) => /\.(md|example)$/.test(candidate)))) {
-      assert.doesNotMatch(text(file), /sk-ant-[A-Za-z0-9_-]{10,}|api[_-]?key\s*[:=]\s*['"][A-Za-z0-9]{16,}/i, relative(file));
+      assert.doesNotMatch(text(file), /AIza[0-9A-Za-z_-]{20,}|api[_-]?key\s*[:=]\s*['"][A-Za-z0-9]{16,}/i, relative(file));
     }
   });
 
   it('reads the API key only from the environment', () => {
-    const usages = sourceFiles.filter((file) => /ANTHROPIC_API_KEY/.test(text(file))).map(relative);
+    const usages = sourceFiles.filter((file) => /GEMINI_API_KEY/.test(text(file))).map(relative);
     assert.deepEqual(usages, ['src/config.js']);
+  });
+
+  it('uses Gemini as the only AI provider', () => {
+    const others = new RegExp(['anthro' + 'pic', 'clau' + 'de', 'open' + 'ai', 'gpt-', 'mistral', 'llama'].join('|'), 'i');
+    // This file names the other providers in order to forbid them.
+    for (const file of files.filter((candidate) => relative(candidate) !== 'tests/quality/hygiene.test.js')) {
+      assert.doesNotMatch(text(file), others, relative(file));
+    }
+    assert.ok(read('src', 'ai', 'geminiClient.js').includes('generativelanguage.googleapis.com'));
+  });
+
+  it('sends the API key in a header and never in a URL', () => {
+    const client = read('src', 'ai', 'geminiClient.js');
+    assert.match(client, /'x-goog-api-key': apiKey/);
+    assert.doesNotMatch(client, /\?key=|&key=|\$\{apiKey\}/);
   });
 
   it('keeps secrets files out of version control', () => {

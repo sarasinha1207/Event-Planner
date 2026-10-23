@@ -1,6 +1,8 @@
 # Celebration Planner
 
-A planning assistant for weddings, birthdays and community events. Describe an event and receive a budget that adds up exactly, a dated timeline, a vendor checklist with booking deadlines and questions to ask, and personalised ideas. An optional AI assistant (Claude) can generate fresh ideas and answer questions about the plan; without it, a built-in planner does the same job.
+![Celebration Planner logo](public/logo.svg)
+
+A planning assistant for weddings, birthdays and community events. Describe an event and receive a budget that adds up exactly, a dated timeline, a vendor checklist with booking deadlines and questions to ask, and personalised ideas. An optional AI assistant powered by Google Gemini can generate fresh ideas and answer questions, and a floating chat assistant on every page can answer planning questions. Without a key, a built-in planner does the same job. Gemini is the only AI used in the project.
 
 The project is built with a deliberately small stack: Node.js with no runtime dependencies on the server, and plain HTML, CSS and ES modules in the browser. There is no build step.
 
@@ -30,7 +32,7 @@ The brief asks for a GenAI-powered planning assistant that helps users organise 
 | Timelines | Dated task list counted back from the event date, compressed automatically when the event is close |
 | Vendor checklists | Per-vendor steps, booking deadlines ordered by lead time, and questions to ask each vendor |
 | Personalised ideas | Ideas filtered by guest count and budget tier and ranked by the theme and interests the user typed |
-| GenAI | Claude generates ideas and answers questions, using a prompt that treats user text as data; a built-in planner is the fallback |
+| GenAI | Gemini generates ideas and answers questions and powers the floating chat assistant, using prompts that treat user text as data. If a model runs out of quota the next one is used automatically, and a built-in planner is the final fallback |
 
 ## Features
 
@@ -42,9 +44,12 @@ The brief asks for a GenAI-powered planning assistant that helps users organise 
 - Vendor checklist with essential and priority markers, four standard steps per vendor and specific questions to ask.
 - Ideas ranked by relevance to the stated theme and interests, with the matching words shown.
 - "Ask the planner" box answering budget, timeline, vendor, guest and idea questions.
+- A floating chat assistant on every page. It remembers the conversation for the tab, knows about your saved plan, and keeps working when a Gemini model is exhausted by switching to the next model.
 - Progress saved in the browser (local storage), a plain-text download and a print layout.
 - Six currencies and locale-aware formatting.
-- Light and dark colour schemes that follow the system setting.
+- A vivid indigo, magenta and coral design with a gradient hero, animated entrance effects, hover and press feedback, animated budget bars and a short confetti burst when a plan is created. Light and dark schemes follow the system setting.
+- Line icons drawn from one small set (`public/js/icons.js`), always decorative and paired with text.
+- All motion is decorative and is switched off for visitors who prefer reduced motion.
 
 ## Quick start
 
@@ -54,7 +59,7 @@ Requirements: Node.js 22 or later. There is nothing to install.
 npm start
 ```
 
-Open http://127.0.0.1:3000 in a browser.
+Open http://127.0.0.1:3000 in a browser. The site has two pages that share one header and footer: Home (http://127.0.0.1:3000/) and Plan an event (/plan.html).
 
 To run the tests:
 
@@ -70,28 +75,31 @@ All settings are environment variables and all are optional. See `.env.example`.
 | --- | --- | --- |
 | `PORT` | `3000` | Port to listen on |
 | `HOST` | `127.0.0.1` | Interface to bind. Loopback by default |
-| `ANTHROPIC_API_KEY` | empty | Enables AI ideas and AI answers. Without it the built-in planner is used |
-| `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Model used for AI features |
+| `GEMINI_API_KEY` | empty | Enables Gemini ideas, answers and the chat assistant. Without it the built-in planner is used |
+| `GEMINI_MODELS` | `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-2.5-pro` | Comma separated models, tried in order. When one is out of quota, overloaded or retired, the next is used |
 | `AI_TIMEOUT_MS` | `20000` | Time limit for each AI request |
 | `RATE_LIMIT_MAX` | `120` | API requests per client per minute |
-| `AI_RATE_LIMIT_MAX` | `10` | AI requests per client per minute |
-| `MAX_BODY_BYTES` | `16384` | Largest accepted request body |
+| `AI_RATE_LIMIT_MAX` | `20` | AI requests per client per minute |
+| `MAX_BODY_BYTES` | `32768` | Largest accepted request body |
 
-Example with AI enabled (PowerShell):
+### Adding your Gemini API key
 
-```powershell
-$env:ANTHROPIC_API_KEY = "your-key"
-npm start
+Create a key at https://aistudio.google.com/apikey, then copy `.env.example` to `.env` in the project folder and set the key:
+
+```
+GEMINI_API_KEY=your-key-here
 ```
 
-The key is read from the environment only. It is never written to disk, logged or sent to the browser.
+Restart the server (`npm run dev` restarts it for you when files change). The `.env` file is read at startup and is ignored by git. You can also set `GEMINI_API_KEY` as an ordinary environment variable, which takes priority over the file. The chat window shows "Powered by Gemini" when the key is working and "Basic mode" when it is not.
+
+The key is only ever used by the server. It is never logged, put in a URL or sent to the browser.
 
 ## How it works
 
 1. The browser sends the event details to `POST /api/plan`.
 2. The server validates every field, then builds the plan with plain functions: budget, timeline, vendors and ideas.
 3. The browser renders the plan with safe DOM calls and keeps progress in local storage.
-4. If AI is enabled, "Generate ideas with AI" and "Ask the planner" call Claude. Any failure, timeout or malformed answer falls back to the built-in planner, and the interface says which one answered.
+4. If a Gemini key is set, "Generate ideas with AI", "Ask the planner" and the floating chat call Gemini. Models are tried in the configured order; one that is out of quota (429), overloaded (5xx), retired (404), slow or silent is set aside for a short time and the next model answers. If no model can answer, or an answer is unusable, the built-in planner responds. The interface always says which one answered, and for Gemini which model.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details and design decisions.
 
@@ -105,7 +113,8 @@ All endpoints are JSON. Errors have the shape `{ "error": { "message": "...", "e
 | `GET /api/meta` | Event types, currencies, input limits and whether AI is enabled |
 | `POST /api/plan` | Body `{ "event": {...}, "today": "YYYY-MM-DD" }`. Returns `{ "plan": {...} }` |
 | `POST /api/ideas` | Same body. Returns `{ "ideas": { "source": "ai" or "builtin", "items": [...] } }` |
-| `POST /api/ask` | Same body plus `"question"`. Returns `{ "source": "ai" or "builtin", "answer": "..." }` |
+| `POST /api/ask` | Same body plus `"question"`. Returns `{ "source": "ai" or "builtin", "model": "...", "answer": "..." }` |
+| `POST /api/chat` | Body `{ "message": "...", "history": [{ "role": "user" or "model", "text": "..." }], "event": {...}, "today": "..." }`. `history` and `event` are optional. Same response as `/api/ask` |
 
 Event fields: `eventType` (`wedding`, `birthday`, `community`), `eventName`, `eventDate`, `guestCount`, `totalBudget`, `currency`, and optional `location`, `theme`, `interests` and `priorities`.
 
@@ -120,10 +129,14 @@ src/
   http/                   Body parsing, router, rate limiter, static files, security headers
   routes/api.js           API endpoints
   planner/                Pure planning logic and event data
-  ai/                     Claude client, prompts, cache and the AI/built-in service
+  ai/                     Gemini client with model failover, prompts, cache and the AI/built-in service
 public/
-  index.html              Page structure
-  css/styles.css          Styles with light, dark, print and forced-colour support
+  index.html              Home page: hero, about, how it works, features, FAQ
+  plan.html               Plan an event page: the three planning steps, form and results
+  logo.svg, logo-mark.svg Logo (full lockup and mark only); favicon.svg is the mark
+  css/chatbot.css         Styles for the floating chat assistant
+  css/styles.css          Shared styles with light, dark, print and forced-colour support
+  css/home.css            Styles used only by the home page
   js/                     ES modules: API client, store, progress, formatting, views
 tests/                    Unit, integration, accessibility and hygiene tests
 docs/                     Architecture, security, accessibility and testing notes
@@ -138,7 +151,7 @@ npm test          # run all tests
 npm run coverage  # run with a coverage report and a 90 percent line threshold
 ```
 
-Tests cover the planner, validation, the HTTP server end to end, the AI client and its fallbacks, client logic and views, accessibility rules, colour contrast and project hygiene. See [docs/TESTING.md](docs/TESTING.md).
+Tests cover the planner, validation, the HTTP server end to end, the Gemini client, its model failover and the built-in fallbacks, client logic and views, accessibility rules, colour contrast and project hygiene. See [docs/TESTING.md](docs/TESTING.md).
 
 ## Security
 

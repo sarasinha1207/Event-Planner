@@ -1,3 +1,15 @@
+// Gemini models to try, in order of preference. When one is out of quota,
+// overloaded or retired, the next one is used automatically.
+export const DEFAULT_GEMINI_MODELS = Object.freeze([
+  'gemini-2.5-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-pro',
+]);
+
+const MODEL_NAME = /^[a-z0-9][a-z0-9.-]{1,60}$/;
+
 function readInteger(env, name, fallback, min, max) {
   const raw = env[name];
   if (raw === undefined || raw === '') return fallback;
@@ -8,18 +20,28 @@ function readInteger(env, name, fallback, min, max) {
   return value;
 }
 
-// Reads settings from environment variables. Nothing is required: without an
-// API key the application runs entirely on the built-in planner.
+function readModels(env) {
+  const raw = env.GEMINI_MODELS;
+  if (raw === undefined || raw.trim() === '') return DEFAULT_GEMINI_MODELS;
+  const models = [...new Set(raw.split(',').map((name) => name.trim()).filter(Boolean))];
+  if (models.length === 0 || models.some((name) => !MODEL_NAME.test(name))) {
+    throw new Error('GEMINI_MODELS must be a comma separated list of model names such as gemini-2.5-flash.');
+  }
+  return Object.freeze(models);
+}
+
+// Reads settings from environment variables. Nothing is required: without a
+// Gemini API key the application runs entirely on the built-in planner.
 export function loadConfig(env = process.env) {
   return Object.freeze({
     port: readInteger(env, 'PORT', 3000, 0, 65535),
     host: env.HOST || '127.0.0.1',
-    anthropicApiKey: (env.ANTHROPIC_API_KEY ?? '').trim(),
-    anthropicModel: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
+    geminiApiKey: (env.GEMINI_API_KEY ?? '').trim(),
+    geminiModels: readModels(env),
     aiTimeoutMs: readInteger(env, 'AI_TIMEOUT_MS', 20_000, 1000, 120_000),
     rateLimitWindowMs: readInteger(env, 'RATE_LIMIT_WINDOW_MS', 60_000, 1000, 3_600_000),
     rateLimitMax: readInteger(env, 'RATE_LIMIT_MAX', 120, 1, 100_000),
-    aiRateLimitMax: readInteger(env, 'AI_RATE_LIMIT_MAX', 10, 1, 10_000),
-    maxBodyBytes: readInteger(env, 'MAX_BODY_BYTES', 16 * 1024, 1024, 1024 * 1024),
+    aiRateLimitMax: readInteger(env, 'AI_RATE_LIMIT_MAX', 20, 1, 10_000),
+    maxBodyBytes: readInteger(env, 'MAX_BODY_BYTES', 32 * 1024, 1024, 1024 * 1024),
   });
 }

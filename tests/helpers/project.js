@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
-const IGNORED = new Set(['node_modules', 'coverage', '.git', '.claude']);
+const IGNORED = new Set(['node_modules', 'coverage', '.git']);
 
 export function listFiles(directory = ROOT, found = []) {
   for (const name of readdirSync(directory)) {

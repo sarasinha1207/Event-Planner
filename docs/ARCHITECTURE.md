@@ -14,7 +14,7 @@ Browser (ES modules)                          Node.js server (no dependencies)
 index.html + main.js  --- JSON over HTTP --->  app.js: security headers, rate limits, routing
   formView, resultsView                           routes/api.js: validate, then call
   views/ (budget, timeline, ...)                    planner/   pure plan builders and event data
-  store.js (local storage)                          ai/        Claude client, prompts, cache, fallback
+  store.js (local storage)                          ai/        Gemini client, prompts, cache, fallback
   progress.js, format.js, api.js                  http/staticFiles.js: serves public/ from memory
 ```
 
@@ -47,9 +47,14 @@ Event content lives in `src/planner/data/*.js` as plain objects. A test checks t
 
 ## AI
 
-- `anthropicClient.js` wraps the Messages API with a timeout and converts every failure into one error type. The key lives in a closure.
+- `geminiClient.js` calls the Gemini `generateContent` API with the key in a header. It keeps an ordered list of models and a small pool that remembers which are cooling down. A model that is out of quota, overloaded, retired, slow or silent is set aside (for 15 seconds to an hour, depending on the failure, or for the length of a `Retry-After` header) and the next model is tried, so one exhausted model never stops the assistant. A rejected API key is the only failure that stops the chain. If every model fails, one error is raised and the service falls back to the built-in planner. An overall time budget stops a long chain of slow models.
 - `prompts.js` builds prompts. User text is stripped of angle brackets and placed inside tagged blocks that the system prompt marks as untrusted data. Model output is parsed defensively: only well-formed items are kept, lengths are capped, and the client renders everything as text.
+- `assistantService.js` also serves the floating chat: it sends earlier turns as untrusted text, adds the visitor's saved plan as context when there is one, and falls back to plan-specific or general site answers when no model is available.
 - `assistantService.js` combines the client and the planner. Each method always returns a usable result and a `source` field (`ai` or `builtin`). Only successful AI idea results are cached, for ten minutes.
+
+## Chat assistant
+
+`public/js/chatbot.js` builds a floating launcher and a non-modal dialog on every page (`site.js` mounts it). `chatMessages.js` builds the message bubbles, suggestions and typing indicator, and `chatStore.js` keeps the conversation in session storage for the life of the tab. The chat reads the saved plan from local storage and sends it with each message, so answers can be personalised. All text is attached as text, never as markup.
 
 ## Browser
 
