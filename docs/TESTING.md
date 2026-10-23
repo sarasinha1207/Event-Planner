@@ -4,7 +4,9 @@
 
 ```bash
 npm test          # all tests
-npm run coverage  # tests plus a coverage report; fails below 90 percent line coverage
+npm run lint      # dead imports and exports, loose equality, debugging output, formatting
+npm run coverage  # tests plus a coverage report; fails below 95 percent of lines or functions and 90 percent of branches
+npm run check     # lint, syntax check and tests
 ```
 
 The suite uses `node:test` and `node:assert`, so nothing needs to be installed. A full run takes a few seconds.
@@ -19,6 +21,10 @@ The suite uses `node:test` and `node:assert`, so nothing needs to be installed. 
 | Server, end to end | `tests/server.test.js` | The real server on a random port: every endpoint, validation errors, content type, malformed and oversized bodies, rate limiting, path traversal attempts, compression, ETags, error hygiene and log content |
 | Client logic | `tests/client/core.test.js` | Formatting; progress calculations; saved-data validation and recovery from corrupt storage; API client behaviour; text export |
 | Client views | `tests/client/views.test.js`, `tests/client/form.test.js` | Tabs keyboard behaviour; budget, timeline, vendor, idea and question views; form reading, writing and error display; results assembly; safe rendering of hostile text |
+| Page logic | `tests/client/plannerPage.test.js`, `tests/client/main.test.js` | Start-up, the form, creating a plan, errors, busy state, saving and restoring, progress, downloading, printing, Gemini ideas and questions, and clearing, run against a fake page with the real planner behind a fake server |
+| Host and origin checks | `tests/http/hostGuard.test.js` | Allowed and refused hosts, cross-site changes, settings, transport header, and the running server |
+| Compression | `tests/http/compression.test.js` | Brotli, gzip and plain responses decode to the original; large API answers are compressed and small ones are not |
+| The program itself | `tests/entry.test.js` | Starts `server.js` as a separate process, serves requests, and checks that a bad setting stops it with one clear message |
 | Print and download | `tests/client/report.test.js`, `tests/quality/print.test.js` | The shared plan report; the print sheet's sections, bullet points, checkboxes and ticks; the text download's layout, checklists, wrapping and file names; the print stylesheet and its colour contrast |
 | Chat assistant | `tests/client/chatbot.test.js` | Launcher and dialog attributes, opening, closing and Escape, focus handling, sending with history and the saved plan, typing indicator, error handling, persistence for the tab, new chat, safe rendering of replies, and the chat API call |
 | Accessibility | `tests/quality/accessibility.test.js` | Page structure, labels, ids, headings, error handling hooks, stylesheet rules |
@@ -35,7 +41,7 @@ The suite uses `node:test` and `node:assert`, so nothing needs to be installed. 
 
 ## Not covered by automated tests
 
-`public/js/main.js` is the startup script that connects the page to the modules above. It contains no logic of its own beyond wiring and is excluded from the coverage figure. It was exercised manually in a browser. Real-browser behaviours such as native `dialog` focus trapping, printing and screen reader output are checked manually; see the checklist in [ACCESSIBILITY.md](ACCESSIBILITY.md).
+Every file in `src/` and `public/js/` is measured, including the entry point `public/js/main.js`. Behaviours that only a real browser has, such as native `dialog` focus trapping, the print dialog and screen reader output, are checked by hand; see the checklist in [ACCESSIBILITY.md](ACCESSIBILITY.md).
 
 ## Adding tests
 

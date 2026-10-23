@@ -72,7 +72,17 @@ describe('chat store', () => {
   it('validates messages', () => {
     assert.equal(isMessage({ role: 'user', text: 'hi' }), true);
     assert.equal(isMessage({ role: 'model', text: 'hi', source: 'ai', model: 'm' }), true);
-    for (const bad of [null, 'x', {}, { role: 'admin', text: 'hi' }, { role: 'user', text: '' }, { role: 'user', text: 5 }, { role: 'user', text: 'hi', source: 3 }, { role: 'user', text: 'hi', model: {} }]) {
+    const invalid = [
+      null,
+      'x',
+      {},
+      { role: 'admin', text: 'hi' },
+      { role: 'user', text: '' },
+      { role: 'user', text: 5 },
+      { role: 'user', text: 'hi', source: 3 },
+      { role: 'user', text: 'hi', model: {} },
+    ];
+    for (const bad of invalid) {
       assert.equal(isMessage(bad), false, JSON.stringify(bad));
     }
   });

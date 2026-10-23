@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { CURRENCIES, CURRENCY_CODES } from '../../src/planner/currencies.js';
+import { CURRENCIES } from '../../src/planner/currencies.js';
 import {
   EVENT_TYPES,
   EVENT_TYPE_KEYS,
@@ -84,7 +84,7 @@ describe('event type helpers', () => {
 
   it('describes currencies for the client', () => {
     const described = describeCurrencies();
-    assert.deepEqual(described.map((currency) => currency.code), CURRENCY_CODES);
+    assert.deepEqual(described.map((currency) => currency.code), Object.keys(CURRENCIES));
     assert.ok(Object.values(CURRENCIES).every((currency) => currency.usdRate > 0));
   });
 });

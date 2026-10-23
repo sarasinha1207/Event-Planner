@@ -24,7 +24,8 @@ The target is WCAG 2.1 level AA. This page lists what was done and how it is che
 - Colour contrast is at least 4.5:1 for text and 3:1 for control borders and focus rings, in both the light and dark themes. `tests/quality/contrast.test.js` computes this from the stylesheet tokens.
 - Information is never conveyed by colour alone: overdue, due today and done are written in words; over-budget amounts say "Over by"; priority and essential markers are text badges.
 - Animations (entrance fades, hover lifts, drifting background shapes, confetti) are decorative only. With the reduced motion setting they are shortened to nothing, and the confetti is never created. Confetti is hidden from assistive technology and ignores the pointer.
-- Focus is always visible with a three pixel outline.
+- Focus is always visible with a three pixel outline, and focused elements are scrolled clear of the sticky header and the chat button.
+- Visitors who ask for more contrast (`prefers-contrast: more`) get stronger borders and hint text in the full text colour.
 - Interactive targets are at least 44 pixels tall.
 - Text uses relative units, the layout reflows to a single column without horizontal page scrolling, and the budget table scrolls inside a labelled, focusable region on narrow screens.
 - The page follows the system light or dark setting, reduced motion preference and forced colours mode, and has a print layout that shows every section.

@@ -7,6 +7,7 @@ import { buildReport } from './planReport.js';
 
 const WIDTH = 78;
 const RULE = '='.repeat(WIDTH);
+const NOTES_LINE = '_'.repeat(WIDTH - 6);
 
 // Turns an event name into a safe download file name.
 export function fileSlug(name) {
@@ -111,7 +112,7 @@ export function planToText(plan, progress, locale = 'en', today = localTodayIso(
         ...(idea.matchedOn.length > 0 ? wrap(`Matches your interests: ${idea.matchedOn.join(', ')}`, '    ') : []),
       ]),
     ]),
-    ...section('Notes', ['', '________________________________________________________________________', '', '________________________________________________________________________', '']),
+    ...section('Notes', ['', NOTES_LINE, '', NOTES_LINE, '']),
     RULE,
     ...wrap(report.disclaimer, ''),
     '',

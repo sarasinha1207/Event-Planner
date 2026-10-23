@@ -75,7 +75,7 @@ const ICON_SHAPES = Object.freeze({
 export const ICON_NAMES = Object.freeze(Object.keys(ICON_SHAPES));
 
 export function hasIcon(name) {
-  return Object.hasOwn(ICON_SHAPES, name);
+  return ICON_NAMES.includes(name);
 }
 
 function svgElement(tag, attributes) {

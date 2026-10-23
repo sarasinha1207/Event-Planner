@@ -9,6 +9,9 @@ export const DEFAULT_GEMINI_MODELS = Object.freeze([
 ]);
 
 const MODEL_NAME = /^[a-z0-9][a-z0-9.-]{1,60}$/;
+const HOST_NAME = /^(?:[a-z0-9.-]{1,253}|\[[0-9a-f:]{2,45}\])$/i;
+const LOOPBACK_ADDRESSES = ['localhost', '127.0.0.1', '::1'];
+const LOOPBACK_HOST_NAMES = Object.freeze(['localhost', '127.0.0.1', '[::1]']);
 
 function readInteger(env, name, fallback, min, max) {
   const raw = env[name];
@@ -30,12 +33,27 @@ function readModels(env) {
   return Object.freeze(models);
 }
 
+// Host names this server answers to. When it listens only on this machine, that
+// is the usual local names; otherwise ALLOWED_HOSTS lists them, or any name is
+// accepted when it is not set.
+function readAllowedHosts(env, listenHost) {
+  const raw = env.ALLOWED_HOSTS;
+  if (raw === undefined || raw.trim() === '') return LOOPBACK_ADDRESSES.includes(listenHost) ? LOOPBACK_HOST_NAMES : null;
+  const hosts = raw.split(',').map((name) => name.trim().toLowerCase()).filter(Boolean);
+  if (hosts.length === 0 || hosts.some((name) => !HOST_NAME.test(name))) {
+    throw new Error('ALLOWED_HOSTS must be a comma separated list of host names such as example.com.');
+  }
+  return Object.freeze(hosts);
+}
+
 // Reads settings from environment variables. Nothing is required: without a
 // Gemini API key the application runs entirely on the built-in planner.
 export function loadConfig(env = process.env) {
+  const host = env.HOST || '127.0.0.1';
   return Object.freeze({
     port: readInteger(env, 'PORT', 3000, 0, 65535),
-    host: env.HOST || '127.0.0.1',
+    host,
+    allowedHosts: readAllowedHosts(env, host),
     geminiApiKey: (env.GEMINI_API_KEY ?? '').trim(),
     geminiModels: readModels(env),
     aiTimeoutMs: readInteger(env, 'AI_TIMEOUT_MS', 20_000, 1000, 120_000),

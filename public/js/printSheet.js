@@ -60,7 +60,16 @@ function budgetTable({ rows, totals, reserveNote }) {
       h(
         'tfoot',
         {},
-        h('tr', {}, h('td'), h('th', { scope: 'row', text: 'Total' }), h('td', { class: 'num', text: '100%' }), h('td', { class: 'num', text: totals.planned }), h('td', { class: 'num', text: totals.spent }), h('td', { class: 'num', text: totals.left })),
+        h(
+          'tr',
+          {},
+          h('td'),
+          h('th', { scope: 'row', text: 'Total' }),
+          h('td', { class: 'num', text: '100%' }),
+          h('td', { class: 'num', text: totals.planned }),
+          h('td', { class: 'num', text: totals.spent }),
+          h('td', { class: 'num', text: totals.left }),
+        ),
       ),
     ),
     reserveNote ? h('p', { class: 'print-note', text: reserveNote }) : null,

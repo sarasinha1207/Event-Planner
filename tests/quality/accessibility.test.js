@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { describe, it } from 'node:test';
 import { EVENT_TYPE_KEYS } from '../../src/planner/eventTypes.js';
-import { CURRENCY_CODES } from '../../src/planner/currencies.js';
+import { CURRENCIES } from '../../src/planner/currencies.js';
 import { ICON_NAMES } from '../../public/js/icons.js';
 import { ROOT, parseTags, read } from '../helpers/project.js';
 
@@ -251,7 +251,7 @@ describe('consistency with the server', () => {
   it('offers exactly the currencies the server supports', () => {
     const start = html.indexOf('<select id="currency"');
     const options = [...html.slice(start, html.indexOf('</select>', start)).matchAll(/<option value="([A-Z]{3})"/g)].map((match) => match[1]);
-    assert.deepEqual([...options].sort(), [...CURRENCY_CODES].sort());
+    assert.deepEqual([...options].sort(), Object.keys(CURRENCIES).sort());
   });
 });
 
@@ -286,5 +286,29 @@ describe('stylesheet accessibility', () => {
     const rule = /\.visually-hidden\s*\{([^}]*)\}/.exec(css)[1];
     assert.match(rule, /position:\s*absolute/);
     assert.doesNotMatch(rule, /display:\s*none|visibility:\s*hidden/);
+  });
+});
+
+describe('visitor preferences', () => {
+  it('offers stronger contrast on request', () => {
+    assert.match(css, /@media \(prefers-contrast: more\) \{[^}]*:root \{[^}]*--border: var\(--border-strong\)/);
+  });
+
+  it('tells the browser which colours to use for its own interface in each scheme', () => {
+    for (const page of pages) {
+      const colours = page.byName('meta').filter((tag) => tag.attrs.name === 'theme-color');
+      assert.equal(colours.length, 2, page.file);
+      assert.deepEqual(colours.map((tag) => tag.attrs.media).sort(), ['(prefers-color-scheme: dark)', '(prefers-color-scheme: light)']);
+    }
+  });
+});
+
+describe('fixed elements and keyboard focus', () => {
+  it('scrolls focused elements clear of the sticky header and the chat button', () => {
+    assert.match(css, /html \{[^}]*scroll-padding-block: 5rem 6rem/);
+  });
+
+  it('leaves room at the end of the page so the chat button never hides the last line', () => {
+    assert.match(css, /\.footer-bottom \{[^}]*padding-bottom: 3\.5rem/);
   });
 });

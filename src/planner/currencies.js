@@ -10,5 +10,3 @@ export const CURRENCIES = Object.freeze({
   AUD: { label: 'Australian Dollar', usdRate: 0.66 },
   CAD: { label: 'Canadian Dollar', usdRate: 0.73 },
 });
-
-export const CURRENCY_CODES = Object.freeze(Object.keys(CURRENCIES));

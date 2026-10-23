@@ -13,6 +13,7 @@ The application stores nothing on the server. Event details are sent to the serv
 | Content security policy | `default-src 'none'`; scripts, styles, images and connections limited to the same origin; no inline code; `frame-ancestors 'none'`; `object-src 'none'`; `base-uri 'none'` | `src/http/security.js` |
 | Other headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, cross-origin isolation headers | `src/http/security.js` |
 | Request limits | JSON content type required, body size limited (32 KiB by default), URL length limited, header and request timeouts set | `src/http/body.js`, `src/app.js` |
+| Host and origin checks | The Host header must be one of this server's names (defeats DNS rebinding), and requests that change something must come from this site (defeats cross-site requests that spend the AI quota) | `src/http/hostGuard.js` |
 | Rate limiting | 120 API requests per minute per client, and 20 AI requests (ideas, questions and chat) per minute | `src/http/rateLimiter.js` |
 | Static files | Served from an in-memory table built at startup, so a request path can never reach a file outside `public/`. Only known file types are loaded | `src/http/staticFiles.js` |
 | Error handling | Unexpected errors return a generic message. Details are logged without request content | `src/app.js` |
@@ -23,6 +24,8 @@ The application stores nothing on the server. Event details are sent to the serv
 | Denial of wallet | AI calls have a timeout, a lower rate limit and a cache for repeated requests | `src/ai/assistantService.js` |
 | Local storage tampering | Saved data is validated against the expected shape on load and discarded if it does not match | `public/js/store.js` |
 | Dependencies | None at runtime or for development | `package.json` |
+| Transport | `Strict-Transport-Security` is sent over encrypted connections | `src/http/security.js` |
+| Fatal errors | Unhandled errors are logged without request content and the process stops instead of continuing in an unknown state; invalid settings stop the server with one clear message | `server.js` |
 | Network exposure | Binds to `127.0.0.1` unless `HOST` is set | `src/config.js` |
 
 ## Verification
@@ -31,7 +34,7 @@ Security behaviour is covered by automated tests: path traversal attempts, malfo
 
 ## Deployment guidance
 
-- Serve over HTTPS and add `Strict-Transport-Security` at the reverse proxy.
+- Serve over HTTPS. Set `ALLOWED_HOSTS` to your domain name. If a reverse proxy ends HTTPS, add `Strict-Transport-Security` there.
 - The built-in rate limiter keys on the connection address. Behind a proxy every request appears to come from the proxy, so also rate limit at the proxy.
 - Keep `GEMINI_API_KEY` in a secret manager or the host's environment settings, or in a `.env` file that is never committed. `.env` files are ignored by git.
 - Set a spending limit on the API key.

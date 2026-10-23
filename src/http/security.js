@@ -23,8 +23,10 @@ export const SECURITY_HEADERS = Object.freeze({
   'Cross-Origin-Resource-Policy': 'same-origin',
 });
 
-export function applySecurityHeaders(res) {
+// HSTS is only meaningful, and only sent, when the connection is encrypted.
+export function applySecurityHeaders(res, req) {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     res.setHeader(name, value);
   }
+  if (req?.socket?.encrypted) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 }

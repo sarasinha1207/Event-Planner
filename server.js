@@ -8,7 +8,14 @@ const SHUTDOWN_GRACE_MS = 5000;
 
 const logger = createLogger();
 loadDotEnv();
-const config = loadConfig();
+
+let config;
+try {
+  config = loadConfig();
+} catch (error) {
+  logger.error('invalid_configuration', { message: error.message });
+  process.exit(1);
+}
 const aiClient = createGeminiClient({
   apiKey: config.geminiApiKey,
   models: config.geminiModels,
@@ -28,6 +35,14 @@ function shutdown(signal) {
   server.close(() => process.exit(0));
   server.closeIdleConnections();
   setTimeout(() => process.exit(1), SHUTDOWN_GRACE_MS).unref();
+}
+
+// A failure nobody handled leaves the program in an unknown state: log it and stop.
+for (const event of ['uncaughtException', 'unhandledRejection']) {
+  process.on(event, (error) => {
+    logger.error('fatal', { event, message: error?.message });
+    process.exit(1);
+  });
 }
 
 process.on('SIGINT', () => shutdown('SIGINT'));

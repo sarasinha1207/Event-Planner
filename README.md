@@ -2,181 +2,207 @@
 
 ![Celebration Planner logo](public/logo.svg)
 
-A planning assistant for weddings, birthdays and community events. Describe an event and receive a budget that adds up exactly, a dated timeline, a vendor checklist with booking deadlines and questions to ask, and personalised ideas. An optional AI assistant powered by Google Gemini can generate fresh ideas and answer questions, and a floating chat assistant on every page can answer planning questions. Without a key, a built-in planner does the same job. Gemini is the only AI used in the project.
 
-The project is built with a deliberately small stack: Node.js with no runtime dependencies on the server, and plain HTML, CSS and ES modules in the browser. There is no build step.
+Organising a celebration means juggling money, dates, suppliers and a hundred small decisions, and it is easy for something important to be forgotten until it is too late. Celebration Planner turns what you know about your event (its type, date, guest count and budget) into a plan you can follow from the first idea to the final thank-you note.
 
-## Contents
+It is built for people planning their own wedding, birthday or community event who want clear guidance without hiring a planner or maintaining spreadsheets. It adapts to the number of guests, the size of the budget and the time left, and it works with or without an AI key: an optional Google Gemini assistant adds fresh ideas and answers, and a built-in planner keeps every feature working when the AI is not available.
 
-- [Problem statement alignment](#problem-statement-alignment)
-- [Features](#features)
-- [Quick start](#quick-start)
-- [Configuration](#configuration)
-- [How it works](#how-it-works)
-- [API](#api)
-- [Project layout](#project-layout)
-- [Testing](#testing)
-- [Security](#security)
-- [Accessibility](#accessibility)
-- [Efficiency](#efficiency)
-- [Limitations and next steps](#limitations-and-next-steps)
+**The challenge it addresses:** a GenAI-powered planning assistant that helps users organise weddings, birthdays and community events with budgets, timelines, vendor checklists and personalised ideas.
 
-## Problem statement alignment
+![Home page](docs/screenshots/Home.png)
 
-The brief asks for a GenAI-powered planning assistant that helps users organise weddings, birthdays and community events with budgets, timelines, vendor checklists and personalised ideas.
 
-| Requirement | Where it is delivered |
+## How it works
+
+1. **Describe your event.** On the Plan an event page, choose a wedding, birthday or community event, then enter its name, date, guest count, currency and total budget. Optionally add a city, a theme, interests and up to three budget priorities.
+2. **The server builds your plan.** It validates every field, then creates the budget, timeline, vendor checklist and ideas with plain, tested functions. Nothing about your event is stored on the server.
+3. **Review and track.** The plan appears in tabs. Tick off tasks and vendor steps, enter what you spend, and watch your progress. Everything is saved in your own browser.
+4. **Ask and refine.** The floating chat assistant, "Ask the planner" and "Generate ideas with AI" call Google Gemini. If a model is out of quota or unavailable, the next model answers; if none can, the built-in planner does. Every answer says where it came from.
+5. **Share.** Print the plan as a checklist or download it as a text file.
+
+
+## Key features
+
+### Budget
+- Splits your total across categories such as venue, food, decor and entertainment, and always adds up exactly.
+- Keeps a protected reserve for surprises.
+- Lets you choose up to three priorities that receive a larger share.
+- Tracks spending per category and says in words when a category is over budget.
+
+### Timeline
+- Counts tasks back from your event date, grouped into phases from early planning to after the event.
+- Compresses automatically, and tells you so, when the event is closer than the recommended lead time.
+- Shows due dates and status, such as "Due in 5 days" or "Overdue by 2 days".
+
+### Vendor checklist
+- Lists each vendor with its budget and a booking deadline, ordered by lead time.
+- Gives four standard steps per vendor and specific questions to ask.
+- Marks essential vendors and your priorities.
+
+### Personalised ideas
+- Ranks ideas by your theme and interests, and filters them by guest count and budget level.
+- Shows which of your words matched each idea.
+- Can generate fresh ideas with Gemini.
+
+### Chat assistant
+- A floating button on every page opens a chat window with an assistant that knows your saved plan.
+- Uses Google Gemini and switches to the next configured model when one is exhausted, overloaded or retired, so it keeps working.
+- Falls back to a built-in assistant when no model is available.
+- Remembers the conversation while the tab is open.
+
+### Print and download
+- A dedicated print sheet with a banner, your details as points, a budget table, and checklists for tasks, vendor steps, questions and ideas, with finished items ticked.
+- A text download with the same content, laid out as points and checklists.
+
+### Privacy, security and accessibility
+- No account, and plans are stored only in your browser.
+- Strict security headers, host and origin checks, input validation, rate limiting and safe rendering of all text.
+- Keyboard and screen reader support, visible focus, tested colour contrast, light and dark modes, high contrast and reduced motion support.
+
+### Performance
+- No runtime dependencies and no build step.
+- Files are served from memory, compressed with Brotli or gzip and cached with ETags.
+
+## Technology stack
+
+| Layer | Technology |
 | --- | --- |
-| Weddings, birthdays, community events | Three event definitions in `src/planner/data`, each with its own budget split, timeline, vendors and ideas |
-| Budgets | Category budget that always sums to the total, priority boosts, a protected contingency reserve, and a spending tracker |
-| Timelines | Dated task list counted back from the event date, compressed automatically when the event is close |
-| Vendor checklists | Per-vendor steps, booking deadlines ordered by lead time, and questions to ask each vendor |
-| Personalised ideas | Ideas filtered by guest count and budget tier and ranked by the theme and interests the user typed |
-| GenAI | Gemini generates ideas and answers questions and powers the floating chat assistant, using prompts that treat user text as data. If a model runs out of quota the next one is used automatically, and a built-in planner is the final fallback |
+| Server | Node.js 22 or later, using only the built-in `http`, `zlib`, `crypto` and `fs` modules |
+| Browser | HTML, CSS and plain ES modules, with no framework and no build step |
+| AI | Google Gemini API (`generateContent`) with ordered model failover |
+| Storage | The browser's local storage (plan and progress) and session storage (chat) |
+| Testing | The built-in Node.js test runner, `node:assert` and built-in coverage |
+| Quality tools | A small dependency-free linter in `scripts/lint.js` and GitHub Actions for continuous integration |
 
-## Features
+## Getting started
 
-- Three event types with separate, sensible defaults.
-- Budget allocation using the largest remainder method, so amounts are whole numbers that add up to the total exactly.
-- Up to three budget priorities that receive a larger share while the reserve stays fixed.
-- Spending tracker with remaining and over-budget indicators.
-- Timeline that compresses proportionally when the event is closer than the recommended lead time, and says so.
-- Vendor checklist with essential and priority markers, four standard steps per vendor and specific questions to ask.
-- Ideas ranked by relevance to the stated theme and interests, with the matching words shown.
-- "Ask the planner" box answering budget, timeline, vendor, guest and idea questions.
-- A floating chat assistant on every page. It remembers the conversation for the tab, knows about your saved plan, and keeps working when a Gemini model is exhausted by switching to the next model.
-- Progress saved in the browser (local storage).
-- A print sheet and a text download that contain the same information: the event details and progress as points, the budget as a table, and checklists (with what you have already done ticked) for timeline tasks, each vendor's steps and questions to ask, and ideas, with room for notes. Use Save as PDF in the print window to keep a PDF.
-- Six currencies and locale-aware formatting.
-- A vivid indigo, magenta and coral design with a gradient hero, animated entrance effects, hover and press feedback, animated budget bars and a short confetti burst when a plan is created. Light and dark schemes follow the system setting.
-- Line icons drawn from one small set (`public/js/icons.js`), always decorative and paired with text.
-- All motion is decorative and is switched off for visitors who prefer reduced motion.
-
-## Quick start
-
-Requirements: Node.js 22 or later. There is nothing to install.
+You need Node.js 22 or later. There is nothing to install.
 
 ```bash
 npm start
 ```
 
-Open http://127.0.0.1:3000 in a browser. The site has two pages that share one header and footer: Home (http://127.0.0.1:3000/) and Plan an event (/plan.html).
-
-To run the tests:
+Open http://127.0.0.1:3000. The site has two pages that share one header and footer: Home (`/`) and Plan an event (`/plan.html`).
 
 ```bash
-npm test
+npm run dev       # restart automatically when files change
+npm test          # run all tests
+npm run lint      # check for dead code and common mistakes
+npm run coverage  # tests with a coverage report and thresholds
+npm run check     # lint, a syntax check and the tests
 ```
-
-## Configuration
-
-All settings are environment variables and all are optional. See `.env.example`.
-
-| Variable | Default | Purpose |
-| --- | --- | --- |
-| `PORT` | `3000` | Port to listen on |
-| `HOST` | `127.0.0.1` | Interface to bind. Loopback by default |
-| `GEMINI_API_KEY` | empty | Enables Gemini ideas, answers and the chat assistant. Without it the built-in planner is used |
-| `GEMINI_MODELS` | `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-2.5-pro` | Comma separated models, tried in order. When one is out of quota, overloaded or retired, the next is used |
-| `AI_TIMEOUT_MS` | `20000` | Time limit for each AI request |
-| `RATE_LIMIT_MAX` | `120` | API requests per client per minute |
-| `AI_RATE_LIMIT_MAX` | `20` | AI requests per client per minute |
-| `MAX_BODY_BYTES` | `32768` | Largest accepted request body |
 
 ### Adding your Gemini API key
 
-Create a key at https://aistudio.google.com/apikey, then copy `.env.example` to `.env` in the project folder and set the key:
+Create a key at https://aistudio.google.com/apikey, then copy `.env.example` to `.env` in the project folder and set:
 
 ```
 GEMINI_API_KEY=your-key-here
 ```
 
-Restart the server (`npm run dev` restarts it for you when files change). The `.env` file is read at startup and is ignored by git. You can also set `GEMINI_API_KEY` as an ordinary environment variable, which takes priority over the file. The chat window shows "Powered by Gemini" when the key is working and "Basic mode" when it is not.
+Restart the server. The `.env` file is read at startup and is ignored by git. You can also set `GEMINI_API_KEY` as an ordinary environment variable, which takes priority. The chat window shows "Powered by Gemini" when the key works and "Basic mode" when it does not. The key is only used by the server and is never logged, put in a URL or sent to the browser.
 
-The key is only ever used by the server. It is never logged, put in a URL or sent to the browser.
 
-## How it works
+## Folder structure
 
-1. The browser sends the event details to `POST /api/plan`.
-2. The server validates every field, then builds the plan with plain functions: budget, timeline, vendors and ideas.
-3. The browser renders the plan with safe DOM calls and keeps progress in local storage.
-4. If a Gemini key is set, "Generate ideas with AI", "Ask the planner" and the floating chat call Gemini. Models are tried in the configured order; one that is out of quota (429), overloaded (5xx), retired (404), slow or silent is set aside for a short time and the next model answers. If no model can answer, or an answer is unusable, the built-in planner responds. The interface always says which one answered, and for Gemini which model.
+```
+.
+|-- server.js                 Entry point: reads settings, wires dependencies, starts listening
+|-- package.json              Scripts only; no dependencies
+|-- .env.example              Documented settings (copy to .env to add your key)
+|-- README.md, CONTRIBUTING.md, SECURITY.md, LICENSE
+|-- .github/workflows/ci.yml  Continuous integration: lint and tests on Node 22 and 24
+|-- scripts/
+|   `-- lint.js               Dependency-free linter
+|-- src/                      The server
+|   |-- app.js                HTTP server: routing, host checks, rate limits, compression, errors
+|   |-- config.js, env.js     Settings with validation, and the git-ignored .env loader
+|   |-- logger.js             Structured JSON logging
+|   |-- http/                 Body reader, router, rate limiter, host guard, static files, security headers
+|   |-- routes/api.js         API endpoints
+|   |-- planner/              Pure planning logic: budget, timeline, vendors, ideas, validation
+|   |   `-- data/             Event content for weddings, birthdays and community events
+|   `-- ai/                   Gemini client with model failover, prompts, cache, AI and built-in service
+|-- public/                   The website
+|   |-- index.html            Home page: hero, about, how it works, features, FAQ
+|   |-- plan.html             Plan an event page: form, plan and print sheet
+|   |-- logo.svg, logo-mark.svg, favicon.svg
+|   |-- css/                  styles.css, home.css, chatbot.css, print.css
+|   `-- js/                   ES modules
+|       |-- plannerPage.js    Page logic (main.js only connects it)
+|       |-- views/            Budget, timeline, vendors, ideas, question and tab views
+|       |-- chatbot.js        Floating chat assistant (with chatMessages.js and chatStore.js)
+|       |-- planReport.js     One description of the plan for printing and downloading
+|       |-- printSheet.js, exportText.js   Print sheet and text download
+|       `-- api.js, store.js, progress.js, format.js, icons.js, ...
+|-- tests/                    Automated tests, grouped by area
+|   |-- planner/, ai/, http/, client/, quality/
+|   |-- helpers/              Fake page, fixtures, test server and page harness
+|   `-- server.test.js, entry.test.js
+`-- docs/
+    |-- ARCHITECTURE.md, SECURITY.md, ACCESSIBILITY.md, TESTING.md
+    `-- screenshots/          Put your screenshots here
+```
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details and design decisions.
+## Evaluation criteria
 
-## API
+| Criterion | How it is addressed | Where to look |
+| --- | --- | --- |
+| Code quality | Small single-purpose modules, none over 200 lines. Pure planning logic is separate from HTTP, AI and the page. Dependencies are passed in. A linter removes dead imports and exports. | `src/`, `public/js/`, `scripts/lint.js`, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Security | Server-side validation, safe rendering (no `innerHTML`), strict content security policy, Host and Origin checks, rate limits, size limits, prompt-injection defences, the API key kept in the environment and sent only in a header, and no dependencies to patch. | [docs/SECURITY.md](docs/SECURITY.md), `src/http/`, `src/ai/` |
+| Efficiency | Files are served from memory with Brotli or gzip and ETags, large API answers are compressed, AI ideas are cached, model failover uses cooldowns and a time budget, and planning is a few hundred operations. | `src/http/staticFiles.js`, `src/ai/geminiClient.js` |
+| Testing | 599 automated tests and about 99.9 percent line coverage, covering the planner, the server end to end, the Gemini client and failover, the page logic, accessibility rules, colour contrast and project hygiene. | `tests/`, [docs/TESTING.md](docs/TESTING.md) |
+| Accessibility | Landmarks, labelled controls, a linked error summary, ARIA tabs with keyboard support, visible focus, contrast checked by tests, light and dark modes, reduced motion and high contrast support, and no information shown by colour alone. | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md), `tests/quality/` |
+| Problem statement alignment | Every requirement of the challenge is delivered. See the table below. | |
 
-All endpoints are JSON. Errors have the shape `{ "error": { "message": "...", "errors": [{ "field": "...", "message": "..." }] } }`.
+### Alignment with the problem statement
 
-| Method and path | Purpose |
+| Requirement | How it is delivered |
 | --- | --- |
-| `GET /api/health` | Liveness check |
-| `GET /api/meta` | Event types, currencies, input limits and whether AI is enabled |
-| `POST /api/plan` | Body `{ "event": {...}, "today": "YYYY-MM-DD" }`. Returns `{ "plan": {...} }` |
-| `POST /api/ideas` | Same body. Returns `{ "ideas": { "source": "ai" or "builtin", "items": [...] } }` |
-| `POST /api/ask` | Same body plus `"question"`. Returns `{ "source": "ai" or "builtin", "model": "...", "answer": "..." }` |
-| `POST /api/chat` | Body `{ "message": "...", "history": [{ "role": "user" or "model", "text": "..." }], "event": {...}, "today": "..." }`. `history` and `event` are optional. Same response as `/api/ask` |
+| Weddings, birthdays and community events | Three event definitions, each with its own budget split, timeline, vendors and ideas |
+| Budgets | An exact category split with priorities, a protected reserve and a spending tracker |
+| Timelines | A dated task list that adapts when the event is close |
+| Vendor checklists | Booking deadlines, standard steps and questions to ask for each vendor |
+| Personalised ideas | Ideas ranked by theme and interests and filtered by guests and budget |
+| GenAI assistant | Gemini generates ideas, answers questions and powers a floating chat assistant, with model failover and a built-in fallback |
 
-Event fields: `eventType` (`wedding`, `birthday`, `community`), `eventName`, `eventDate`, `guestCount`, `totalBudget`, `currency`, and optional `location`, `theme`, `interests` and `priorities`.
+## Testing results
 
-## Project layout
 
-```
-server.js                 Entry point: reads config, wires dependencies, starts listening
-src/
-  app.js                  HTTP server: routing, rate limits, errors, logging
-  config.js               Environment settings with validation
-  logger.js               Structured JSON logging
-  http/                   Body parsing, router, rate limiter, static files, security headers
-  routes/api.js           API endpoints
-  planner/                Pure planning logic and event data
-  ai/                     Gemini client with model failover, prompts, cache and the AI/built-in service
-public/
-  index.html              Home page: hero, about, how it works, features, FAQ
-  plan.html               Plan an event page: the three planning steps, form and results
-  logo.svg, logo-mark.svg Logo (full lockup and mark only); favicon.svg is the mark
-  css/chatbot.css         Styles for the floating chat assistant
-  css/styles.css          Shared styles with light, dark, print and forced-colour support
-  css/home.css            Styles used only by the home page
-  js/                     ES modules: API client, store, progress, formatting, views
-tests/                    Unit, integration, accessibility and hygiene tests
-docs/                     Architecture, security, accessibility and testing notes
-```
+| Area | Folder | Tests | Result |
+| --- | --- | --- | --- |
+| Planner logic | `tests/planner` | 108 | Passed |
+| Gemini client and AI service | `tests/ai` | 71 | Passed |
+| HTTP units, host checks and compression | `tests/http` | 51 | Passed |
+| Server end to end and the program itself | `tests/server.test.js`, `tests/entry.test.js` | 45 | Passed |
+| Page logic, views, chat, print and download | `tests/client` | 167 | Passed |
+| Accessibility, contrast, print, logo and hygiene | `tests/quality` | 157 | Passed |
+| **Total** | | **599** | **All passed, 0 failed** |
 
-## Testing
+| Coverage measure | Result | Threshold |
+| --- | --- | --- |
+| Lines | 99.87 percent | 95 percent |
+| Branches | 98.40 percent | 90 percent |
+| Functions | 99.77 percent | 95 percent |
 
-The suite uses the built-in Node.js test runner and has no dependencies.
+The linter reports no problems. Run `npm run check` to reproduce these results. See [docs/TESTING.md](docs/TESTING.md) for what each group checks.
 
-```bash
-npm test          # run all tests
-npm run coverage  # run with a coverage report and a 90 percent line threshold
-```
+Not covered by automated tests, and checked by hand instead: behaviour that only a real browser has, such as the print dialog, focus handling in native dialogs and screen reader output.
 
-Tests cover the planner, validation, the HTTP server end to end, the Gemini client, its model failover and the built-in fallbacks, client logic and views, accessibility rules, colour contrast and project hygiene. See [docs/TESTING.md](docs/TESTING.md).
+## Future improvements
 
-## Security
+- **Accounts and sync.** Optional sign-in so a plan can follow you between devices and be shared with a partner or committee.
+- **Collaboration.** Assign tasks to people, share a read-only link and add comments.
+- **More event types.** Corporate events, anniversaries, baby showers and festivals, each with its own data file.
+- **Guest management.** Guest list, RSVP tracking, dietary needs and a seating plan.
+- **Real prices.** Optional regional price guidance, and quote tracking per vendor.
+- **Reminders.** Calendar export and email or notification reminders for upcoming deadlines.
+- **PDF export.** A generated PDF in addition to printing.
+- **More languages.** Translated interface and content, and right-to-left layouts.
+- **Smarter AI.** Let Gemini adjust the timeline and budget on request, and stream answers into the chat.
+- **Installable app.** A web app manifest and offline support.
+- **Wider browser testing.** Automated end-to-end tests in real browsers.
 
-Input is validated on the server, output is rendered as text, the content security policy forbids inline code and third-party origins, the API is rate limited, request bodies are size limited, and prompts treat user text as data. See [docs/SECURITY.md](docs/SECURITY.md).
+## Contributing and licence
 
-## Accessibility
-
-The interface targets WCAG 2.1 AA: semantic landmarks, labelled controls, a linked error summary, keyboard-operable tabs that follow the ARIA pattern, visible focus, contrast checked by tests, reduced-motion and forced-colour support, and no information conveyed by colour alone. See [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md).
-
-## Efficiency
-
-- No runtime dependencies and no client build step.
-- Static files are read once at startup, compressed once, and served with ETags so repeat visits cost a 304.
-- Plan generation is a few hundred operations and runs in well under a millisecond.
-- Identical AI idea requests are served from a small time-limited cache, and AI calls have a strict timeout and a lower rate limit.
-- The browser updates only the parts of the page that change when a box is ticked or an amount is typed.
-
-## Limitations and next steps
-
-- Budget shares and timelines are planning guidance, not quotes. Real prices vary by city and season.
-- Plans live in one browser. Sharing or syncing between devices would need accounts and a database.
-- Rate limiting is per process and keyed on the connection address; behind a reverse proxy, apply limits there as well.
-- Run behind HTTPS in production and add a `Strict-Transport-Security` header at the proxy.
-
-## Licence
-
-MIT. See [LICENSE](LICENSE).
+See [CONTRIBUTING.md](CONTRIBUTING.md) to get started and [SECURITY.md](SECURITY.md) to report a vulnerability. Released under the MIT licence. See [LICENSE](LICENSE).

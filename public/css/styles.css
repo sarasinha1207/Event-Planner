@@ -64,6 +64,14 @@
   }
 }
 
+/* Visitors who ask for more contrast get stronger borders and body-coloured hints. */
+@media (prefers-contrast: more) {
+  :root {
+    --border: var(--border-strong);
+    --text-muted: var(--text);
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -73,6 +81,8 @@
 html {
   font-size: 100%;
   scroll-behavior: smooth;
+  /* Keep focused elements clear of the sticky header and the chat button. */
+  scroll-padding-block: 5rem 6rem;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -563,6 +573,7 @@ a {
 .footer-bottom {
   margin-top: 1.75rem;
   padding-top: 1rem;
+  padding-bottom: 3.5rem;
   border-top: 1px solid var(--border);
   font-size: 0.85rem;
 }

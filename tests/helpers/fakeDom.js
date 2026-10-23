@@ -112,6 +112,10 @@ export class FakeElement {
     this.focused = true;
   }
 
+  scrollIntoView(options) {
+    this.scrolledTo = options;
+  }
+
   // Supports compound selectors such as input[name="x"]:checked, #id and .class.
   matches(selector) {
     const parsed = /^([a-zA-Z][\w-]*)?((?:[#.][\w-]+|\[[^\]]+\]|:checked)*)$/.exec(selector);

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { gzipSync } from 'node:zlib';
+import { brotliCompressSync, constants, gzipSync } from 'node:zlib';
 import { HttpError } from './errors.js';
 
 const MIME_TYPES = Object.freeze({
@@ -42,6 +42,7 @@ export async function loadStaticFiles(root) {
       type,
       body,
       gzip: COMPRESSIBLE.has(extension) ? gzipSync(body) : null,
+      br: COMPRESSIBLE.has(extension) ? brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } }) : null,
       etag: `"${createHash('sha256').update(body).digest('base64url').slice(0, 27)}"`,
     });
   }
@@ -77,9 +78,10 @@ export function serveStatic(req, res, pathname, files) {
     return;
   }
 
-  const useGzip = file.gzip !== null && /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''));
-  const body = useGzip ? file.gzip : file.body;
-  if (useGzip) res.setHeader('Content-Encoding', 'gzip');
+  const accepted = String(req.headers['accept-encoding'] ?? '');
+  const encoding = file.br && /\bbr\b/.test(accepted) ? 'br' : file.gzip && /\bgzip\b/.test(accepted) ? 'gzip' : null;
+  const body = encoding ? file[encoding] : file.body;
+  if (encoding) res.setHeader('Content-Encoding', encoding);
   res.setHeader('Content-Length', body.length);
   res.writeHead(200);
   res.end(req.method === 'HEAD' ? undefined : body);

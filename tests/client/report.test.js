@@ -233,7 +233,14 @@ describe('text download', () => {
   });
 
   it('lists the event details as points', () => {
-    for (const point of ['* Event type: Wedding', '* Guests: 120', '* City or area: Pune', '* Theme or style: garden', '* Budget priorities: Photography and video, Decor and flowers']) {
+    const expected = [
+      '* Event type: Wedding',
+      '* Guests: 120',
+      '* City or area: Pune',
+      '* Theme or style: garden',
+      '* Budget priorities: Photography and video, Decor and flowers',
+    ];
+    for (const point of expected) {
       assert.ok(lines.includes(point), point);
     }
     assert.ok(lines.some((line) => line.startsWith('* Interests and preferences: live music, flowers')));

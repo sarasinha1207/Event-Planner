@@ -25,7 +25,7 @@ index.html + main.js  --- JSON over HTTP --->  app.js: security headers, rate li
 | `server.js` | Composition root: loads config, creates the AI client, starts the server, handles shutdown signals |
 | `src/app.js` | Builds the HTTP server. Applies security headers, parses the URL, enforces rate limits, reads JSON bodies, converts errors to responses |
 | `src/routes/api.js` | Declares the endpoints as `{ method, path, limit, handler }` records. Handlers are plain async functions |
-| `src/http/*` | Small single-purpose modules: body reader, router, rate limiter, static files, security headers, error type |
+| `src/http/*` | Small single-purpose modules: body reader, router, rate limiter, host guard, static files, security headers, error type |
 | `src/planner/*` | The product logic. Everything here is a pure function of its inputs |
 | `src/ai/*` | Everything that talks to a model |
 
@@ -52,13 +52,17 @@ Event content lives in `src/planner/data/*.js` as plain objects. A test checks t
 - `assistantService.js` also serves the floating chat: it sends earlier turns as untrusted text, adds the visitor's saved plan as context when there is one, and falls back to plan-specific or general site answers when no model is available.
 - `assistantService.js` combines the client and the planner. Each method always returns a usable result and a `source` field (`ai` or `builtin`). Only successful AI idea results are cached, for ten minutes.
 
+## Print and download
+
+`planReport.js` turns a plan and its progress into one plain description. `printSheet.js` draws it as the printed document (shown only when printing, styled by `print.css`) and `exportText.js` writes it as a text file, so both always contain the same information. `printing.js` rebuilds the print sheet just before the browser prints.
+
 ## Chat assistant
 
 `public/js/chatbot.js` builds a floating launcher and a non-modal dialog on every page (`site.js` mounts it). `chatMessages.js` builds the message bubbles, suggestions and typing indicator, and `chatStore.js` keeps the conversation in session storage for the life of the tab. The chat reads the saved plan from local storage and sends it with each message, so answers can be personalised. All text is attached as text, never as markup.
 
 ## Browser
 
-- `main.js` handles startup, the form and persistence. `resultsView.js` assembles the results. `views/*` each build one section and own their updates.
+- `main.js` only connects the page's elements, the server and storage. `plannerPage.js` holds the page logic and receives everything it touches from outside, so it is tested without a browser; `pageElements.js` lists the element ids it needs. `resultsView.js` assembles the results. `views/*` each build one section and own their updates.
 - `dom.js` provides `h()`, an element builder that attaches text as text nodes. There is no `innerHTML` anywhere (a test enforces this).
 - `progress.js` holds pure functions for completed tasks, vendor steps and spending. `store.js` validates everything it reads back, because local storage can hold anything.
 - Views update the part of the page that changed. Ticking a task changes one status label and the summary figures, not the whole list.

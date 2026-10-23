@@ -102,32 +102,39 @@ const SITE_TOPICS = [
   {
     words: ['start', 'begin', 'use', 'work', 'how'],
     answer:
-      'Open Plan an event, choose a wedding, birthday or community event, then enter the name, date, guest count, currency and budget. Choose Create my plan to receive a budget, a dated timeline, a vendor checklist and ideas.',
+      'Open Plan an event, choose a wedding, birthday or community event, then enter the name, date, guest ' +
+      'count, currency and budget. Choose Create my plan to receive a budget, a dated timeline, a vendor ' +
+      'checklist and ideas.',
   },
   {
     words: ['store', 'privacy', 'data', 'save', 'private', 'account', 'secure'],
     answer:
-      'There is no account. Your plan is stored only in your own browser, and the server does not keep your event details. Choose Clear saved plan on the Plan an event page to remove it.',
+      'There is no account. Your plan is stored only in your own browser, and the server does not keep your' +
+      ' event details. Choose Clear saved plan on the Plan an event page to remove it.',
   },
   {
     words: ['budget', 'cost', 'money', 'price', 'split'],
     answer:
-      'Your budget is divided across categories such as venue, food, decor and entertainment, with a reserve held back for surprises. Create a plan to see the exact amounts for your event.',
+      'Your budget is divided across categories such as venue, food, decor and entertainment, with a ' +
+      'reserve held back for surprises. Create a plan to see the exact amounts for your event.',
   },
   {
     words: ['timeline', 'date', 'soon', 'late', 'schedule', 'deadline'],
     answer:
-      'The timeline counts tasks back from your event date. If the event is close, the tasks are compressed to fit and you are told so. Book the vendors with the longest lead times first.',
+      'The timeline counts tasks back from your event date. If the event is close, the tasks are compressed' +
+      ' to fit and you are told so. Book the vendors with the longest lead times first.',
   },
   {
     words: ['vendor', 'caterer', 'photographer', 'venue', 'book'],
     answer:
-      'The vendor checklist lists each vendor with a booking deadline, four standard steps and questions to ask. Create a plan to see it for your event.',
+      'The vendor checklist lists each vendor with a booking deadline, four standard steps and questions to' +
+      ' ask. Create a plan to see it for your event.',
   },
   {
     words: ['ai', 'gemini', 'bot', 'assistant', 'smart'],
     answer:
-      'Ideas and answers can come from the Gemini AI assistant when it is switched on. When it is not available, a built-in planner answers instead, and every answer says which one wrote it.',
+      'Ideas and answers can come from the Gemini AI assistant when it is switched on. When it is not ' +
+      'available, a built-in planner answers instead, and every answer says which one wrote it.',
   },
 ];
 
