@@ -1,8 +1,13 @@
 import { buildPrintSheet } from './printSheet.js';
 import { localTodayIso } from './format.js';
 
-// Keeps the hidden print sheet up to date. It is rebuilt just before the browser
-// prints, so Ctrl+P and the Print button both print the current plan and progress.
+/**
+ * Keeps the hidden print sheet up to date. It is rebuilt just before the browser
+ * prints, so Ctrl+P and the Print button both print the current plan and progress.
+ *
+ * @param {{ root: HTMLElement, getState: () => object, locale: string }} options
+ * @returns {{ refresh: Function, print: Function }}
+ */
 export function createPrinter({ root, getState, locale }) {
   function refresh() {
     const { plan, progress } = getState();

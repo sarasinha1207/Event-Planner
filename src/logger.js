@@ -1,5 +1,10 @@
-// Structured JSON logging. Callers pass only event names and non-sensitive
-// fields; request bodies, user text and secrets are never logged.
+/**
+ * Structured JSON logging. Callers pass only event names and non-sensitive
+ * fields; request bodies, user text and secrets are never logged.
+ *
+ * @param {{ write?: (line: string) => void, clock?: () => Date }} [options]
+ * @returns {{ info: Function, warn: Function, error: Function }}
+ */
 export function createLogger({ write = (line) => process.stderr.write(`${line}\n`), clock = () => new Date() } = {}) {
   function log(level, event, fields = {}) {
     write(JSON.stringify({ time: clock().toISOString(), level, event, ...fields }));

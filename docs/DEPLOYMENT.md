@@ -24,7 +24,7 @@ Set these in the same place. All have sensible defaults.
 
 | Name | Default on Vercel | Purpose |
 | --- | --- | --- |
-| `GEMINI_MODELS` | the list in the README | Models tried in order |
+| `GEMINI_MODELS` | the list in `.env.example` | Models tried in order. Retired models answer with 404 and are skipped, so check the list now and then |
 | `AI_TIMEOUT_MS` | `8000` | Time limit for each model. Two attempts must fit inside the function limit |
 | `RATE_LIMIT_MAX` | `120` | API requests per visitor per minute |
 | `AI_RATE_LIMIT_MAX` | `20` | AI requests per visitor per minute |

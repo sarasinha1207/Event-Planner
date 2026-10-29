@@ -11,6 +11,13 @@ const TOPICS = [
 
 const MAX_LISTED = 3;
 
+/**
+ * Formats a whole amount in the given currency, without decimals.
+ *
+ * @param {number} amount
+ * @param {string} currency ISO 4217 code.
+ * @returns {string}
+ */
 export function formatMoney(amount, currency) {
   return new Intl.NumberFormat('en', {
     style: 'currency',
@@ -23,18 +30,20 @@ function tokenise(question) {
   return String(question).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(Boolean);
 }
 
-function pickTopic(question) {
+// The topic whose keywords match the most words of the question, or null when
+// none match. The first topic wins a tie, so the order of the lists matters.
+function bestMatch(question, topics) {
   const tokens = tokenise(question);
   let best = null;
   let bestScore = 0;
-  for (const topic of TOPICS) {
+  for (const topic of topics) {
     const score = tokens.filter((token) => topic.words.some((word) => token.startsWith(word))).length;
     if (score > bestScore) {
       best = topic;
       bestScore = score;
     }
   }
-  return best?.id ?? null;
+  return best;
 }
 
 function answerBudget(plan) {
@@ -141,23 +150,26 @@ const SITE_TOPICS = [
 export const GENERAL_HELP_TEXT =
   'I can help with planning budgets, timelines, vendors and ideas, and with using this site. Create a plan on the Plan an event page for answers specific to your event.';
 
-// Answers for the chat assistant when no model is available and the visitor
-// has no saved plan.
+/**
+ * Answers for the chat assistant when no model is available and the visitor
+ * has no saved plan.
+ *
+ * @param {string} question
+ * @returns {string}
+ */
 export function answerGeneral(question) {
-  const tokens = tokenise(question);
-  let best = null;
-  let bestScore = 0;
-  for (const topic of SITE_TOPICS) {
-    const score = tokens.filter((token) => topic.words.some((word) => token.startsWith(word))).length;
-    if (score > bestScore) {
-      best = topic;
-      bestScore = score;
-    }
-  }
-  return best ? best.answer : GENERAL_HELP_TEXT;
+  return bestMatch(question, SITE_TOPICS)?.answer ?? GENERAL_HELP_TEXT;
 }
 
+/**
+ * Answers a question about a specific plan. `today` is an ISO date string.
+ *
+ * @param {string} question
+ * @param {object} plan
+ * @param {string} today
+ * @returns {string}
+ */
 export function answerLocally(question, plan, today) {
-  const topic = pickTopic(question);
-  return topic ? ANSWERS[topic](plan, today) : HELP_TEXT;
+  const topic = bestMatch(question, TOPICS);
+  return topic ? ANSWERS[topic.id](plan, today) : HELP_TEXT;
 }

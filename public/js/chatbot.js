@@ -9,8 +9,13 @@ import { icon } from './icons.js';
 const MAX_MESSAGE_LENGTH = 500;
 const HISTORY_TURNS = 10;
 
-// `api.chat(message, history, event, today)` talks to the server and
-// `getContext()` returns { event } when the visitor has a saved plan.
+/**
+ * `api.chat(message, history, event, today)` talks to the server and
+ * `getContext()` returns { event } when the visitor has a saved plan.
+ *
+ * @param {{ api: object, storage: Storage | null, getContext?: () => object | null, today?: () => string }} options
+ * @returns {object}
+ */
 export function createChatbot({ api, storage, getContext = () => null, today = localTodayIso }) {
   const store = createChatStore(storage);
   let messages = store.load();

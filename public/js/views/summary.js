@@ -13,6 +13,12 @@ function stat(label, valueNode) {
   return h('div', { class: 'stat' }, h('dt', { text: label }), valueNode);
 }
 
+/**
+ * The summary at the top of the results: countdown, task progress and spending.
+ *
+ * @param {{ plan: object, progress: object, today: string, locale: string }} options
+ * @returns {object}
+ */
 export function createSummary({ plan, progress, today, locale }) {
   const money = (amount) => formatMoney(amount, plan.budget.currency, locale);
 

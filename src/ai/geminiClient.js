@@ -6,13 +6,20 @@
 // any one model can answer. Only a rejected API key stops the whole chain.
 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const THINKING_CAN_BE_DISABLED = /^gemini-2\.5-flash/;
+// Models that "think" before they answer spend part of the output allowance on it,
+// which can cut a short answer off. The setting that turns it down depends on the family.
+const THINKING_BUDGET_MODELS = /^gemini-2\.5-flash/;
+const THINKING_LEVEL_MODELS = /^gemini-3/;
 const TOTAL_BUDGET_FACTOR = 2;
+const TEMPERATURE = 0.7;
+const MAX_RETRY_AFTER_MS = 3_600_000;
+// Statuses that can mean the key itself is the problem, as opposed to one model.
+const KEY_ERROR_STATUSES = Object.freeze([400, 401, 403]);
 
 export const COOLDOWNS_MS = Object.freeze({
   quota: 60_000,
   busy: 30_000,
-  retired: 3_600_000,
+  retired: MAX_RETRY_AFTER_MS,
   other: 120_000,
   transient: 15_000,
 });
@@ -32,7 +39,12 @@ class ModelSkipped extends Error {
   }
 }
 
-// Remembers which models are temporarily set aside.
+/**
+ * Remembers which models are temporarily set aside.
+ *
+ * @param {{ models: string[], now?: () => number }} options
+ * @returns {{ order: Function, block: Function, clear: Function, isBlocked: Function }}
+ */
 export function createModelPool({ models, now = Date.now }) {
   const blockedUntil = new Map();
   return {
@@ -50,7 +62,12 @@ export function createModelPool({ models, now = Date.now }) {
   };
 }
 
-// Gemini needs turns that alternate and start with the user.
+/**
+ * Gemini needs turns that alternate and start with the user.
+ *
+ * @param {{ role: string, text: string }[]} turns
+ * @returns {{ role: string, text: string }[]}
+ */
 export function normaliseTurns(turns) {
   const merged = [];
   for (const turn of turns) {
@@ -61,10 +78,18 @@ export function normaliseTurns(turns) {
   return merged;
 }
 
+// How to keep a model's thinking small, or null for models where it is not set
+// (such as the "-latest" aliases, whose underlying model can change).
+function thinkingConfigFor(model) {
+  if (THINKING_BUDGET_MODELS.test(model)) return { thinkingBudget: 0 };
+  if (THINKING_LEVEL_MODELS.test(model)) return { thinkingLevel: 'minimal' };
+  return null;
+}
+
 function cooldownFor(status, response) {
   if (status === 429) {
     const seconds = Number(response.headers?.get?.('retry-after'));
-    return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, 3_600_000) : COOLDOWNS_MS.quota;
+    return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, MAX_RETRY_AFTER_MS) : COOLDOWNS_MS.quota;
   }
   if (status === 404) return COOLDOWNS_MS.retired;
   if (status >= 500) return COOLDOWNS_MS.busy;
@@ -89,19 +114,25 @@ function extractText(payload) {
     .trim();
 }
 
-// The key is held in this closure and sent in a header, never in the URL, so it
-// does not appear in logs or error messages.
+/**
+ * The key is held in this closure and sent in a header, never in the URL, so it
+ * does not appear in logs or error messages.
+ *
+ * @param {{ apiKey: string, models: string[], timeoutMs: number, fetchImpl?: Function, now?: () => number, logger?: object }} options
+ * @returns {{ enabled: boolean, complete: Function, pool: object }} `complete` resolves to `{ text, model }`.
+ */
 export function createGeminiClient({ apiKey, models, timeoutMs, fetchImpl = fetch, now = Date.now, logger }) {
   const enabled = typeof apiKey === 'string' && apiKey.length > 0 && models.length > 0;
   const pool = createModelPool({ models, now });
 
-  async function callModel(model, { system, turns, maxTokens }) {
-    const generationConfig = { maxOutputTokens: maxTokens, temperature: 0.7 };
-    if (THINKING_CAN_BE_DISABLED.test(model)) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+  // Sends one request to one model. Network failures become ModelSkipped.
+  async function sendRequest(model, { system, turns, maxTokens }) {
+    const generationConfig = { maxOutputTokens: maxTokens, temperature: TEMPERATURE };
+    const thinkingConfig = thinkingConfigFor(model);
+    if (thinkingConfig) generationConfig.thinkingConfig = thinkingConfig;
 
-    let response;
     try {
-      response = await fetchImpl(`${BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
+      return await fetchImpl(`${BASE_URL}/${encodeURIComponent(model)}:generateContent`, {
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({
@@ -114,14 +145,21 @@ export function createGeminiClient({ apiKey, models, timeoutMs, fetchImpl = fetc
     } catch {
       throw new ModelSkipped('network', COOLDOWNS_MS.transient);
     }
+  }
 
-    if (!response.ok) {
-      const detail = await readErrorMessage(response);
-      if ([400, 401, 403].includes(response.status) && /api key/i.test(detail)) {
-        throw new AiUnavailableError('The Gemini API key was rejected.');
-      }
-      throw new ModelSkipped(`status ${response.status}`, cooldownFor(response.status, response));
+  // Turns a failed response into the right error: a rejected key stops the
+  // whole chain, anything else only sets this model aside.
+  async function failureFor(response) {
+    const detail = await readErrorMessage(response);
+    if (KEY_ERROR_STATUSES.includes(response.status) && /api key/i.test(detail)) {
+      return new AiUnavailableError('The Gemini API key was rejected.');
     }
+    return new ModelSkipped(`status ${response.status}`, cooldownFor(response.status, response));
+  }
+
+  async function callModel(model, request) {
+    const response = await sendRequest(model, request);
+    if (!response.ok) throw await failureFor(response);
 
     let payload;
     try {

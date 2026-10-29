@@ -1,5 +1,11 @@
 import { h } from '../dom.js';
 
+/**
+ * The Ask the planner tab.
+ *
+ * @param {{ maxLength: number, onAsk: (question: string) => void }} options
+ * @returns {object}
+ */
 export function createAskView({ maxLength, onAsk }) {
   const answer = h('div', { class: 'answer', role: 'status', 'aria-live': 'polite' });
   const input = h('textarea', {

@@ -1,6 +1,13 @@
-// Opens the native confirmation dialog, or falls back to window.confirm in
-// browsers without <dialog> support. The dialog's own confirm button is wired
-// separately; `onConfirm` is only used by the fallback.
+/**
+ * Opens the native confirmation dialog, or falls back to window.confirm in
+ * browsers without <dialog> support. The dialog's own confirm button is wired
+ * separately; `onConfirm` is only used by the fallback.
+ *
+ * @param {HTMLDialogElement} dialog
+ * @param {string} message
+ * @param {() => void} onConfirm
+ * @returns {void}
+ */
 export function openConfirm(dialog, message, onConfirm) {
   if (typeof dialog.showModal === 'function') {
     dialog.returnValue = '';

@@ -1,6 +1,12 @@
 import { h } from './dom.js';
 
-// Offers text as a file download without sending it anywhere.
+/**
+ * Offers text as a file download without sending it anywhere.
+ *
+ * @param {string} text
+ * @param {string} filename
+ * @returns {void}
+ */
 export function downloadTextFile(text, filename) {
   const url = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
   const link = h('a', { href: url, download: filename });

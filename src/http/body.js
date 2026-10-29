@@ -2,8 +2,15 @@ import { HttpError } from './errors.js';
 
 const TOO_LARGE_MESSAGE = 'Request body is too large.';
 
-// Reads and parses a JSON request body, refusing anything oversized or of the
-// wrong type before it is parsed.
+/**
+ * Reads and parses a JSON request body, refusing anything oversized or of the
+ * wrong type before it is parsed.
+ *
+ * @param {import('node:http').IncomingMessage} req
+ * @param {{ maxBytes: number }} options
+ * @returns {Promise<unknown>}
+ * @throws {HttpError} 400, 413 or 415.
+ */
 export async function readJsonBody(req, { maxBytes }) {
   const contentType = String(req.headers['content-type'] ?? '').split(';')[0].trim().toLowerCase();
   if (contentType !== 'application/json') {

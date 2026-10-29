@@ -46,7 +46,9 @@ It is built for people planning their own wedding, birthday or community event w
 
 ### Chat assistant
 - A floating button on every page opens a chat window with an assistant that knows your saved plan.
-- Uses Google Gemini and switches to the next configured model when one is exhausted, overloaded or retired, so it keeps working.
+- Uses Google Gemini and switches to the next configured model when one is exhausted, overloaded, slow or retired, so it keeps working. A model that fails is rested for a short time before it is tried again.
+- Keeps the "thinking" of Gemini 2.5 and Gemini 3 models small, so short answers and idea lists are never cut off.
+- Gives each model 8 seconds, so the whole chain finishes well within the browser's 30 second limit and a Vercel function's limit.
 - Falls back to a built-in assistant when no model is available.
 - Remembers the conversation while the tab is open.
 
@@ -63,13 +65,29 @@ It is built for people planning their own wedding, birthday or community event w
 - No runtime dependencies and no build step.
 - Files are served from memory, compressed with Brotli or gzip and cached with ETags.
 
+---
+
+
+<div align="center">
+<table align="center">
+  <tr>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/Print-1.png" alt="Print"><br>
+    </td>
+    <td width="50%" align="center">
+      <img src="docs/screenshots/Print-2.png"  alt="Print"><br>
+    </td>
+  </tr>
+</table>
+</div>
+
 ## Technology stack
 
 | Layer | Technology |
 | --- | --- |
 | Server | Node.js 22 or later, using only the built-in `http`, `zlib`, `crypto` and `fs` modules |
 | Browser | HTML, CSS and plain ES modules, with no framework and no build step |
-| AI | Google Gemini API (`generateContent`) with ordered model failover |
+| AI | Google Gemini API (`generateContent`) with ordered model failover across current models |
 | Storage | The browser's local storage (plan and progress) and session storage (chat) |
 | Testing | The built-in Node.js test runner, `node:assert` and built-in coverage |
 | Quality tools | A small dependency-free linter in `scripts/lint.js` and GitHub Actions for continuous integration |
@@ -102,10 +120,14 @@ GEMINI_API_KEY=your-key-here
 
 Restart the server. The `.env` file is read at startup and is ignored by git. You can also set `GEMINI_API_KEY` as an ordinary environment variable, which takes priority. The chat window shows "Powered by Gemini" when the key works and "Basic mode" when it does not. The key is only used by the server and is never logged, put in a URL or sent to the browser.
 
+Optional settings, all in `.env.example`:
 
-### Deploying to Vercel
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `GEMINI_MODELS` | `gemini-2.5-flash`, `gemini-3.1-flash-lite`, `gemini-3-flash-preview`, `gemini-flash-lite-latest`, `gemini-flash-latest`, `gemini-2.5-flash-lite`, `gemini-2.5-pro` | Models to try, in order. Google retires models over time, and a retired one is skipped automatically. The `-latest` names always point to a current model. |
+| `AI_TIMEOUT_MS` | `8000` | Time limit for each model |
+| `AI_RATE_LIMIT_MAX` | `20` | AI requests per visitor per minute |
 
-The project is ready for Vercel: the pages in `public/` are served by Vercel and the API runs as serverless functions in `api/`, with settings in `vercel.json`. Import the repository, add `GEMINI_API_KEY` as an environment variable, and deploy. See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the steps.
 
 ## Folder structure
 
@@ -154,10 +176,10 @@ The project is ready for Vercel: the pages in `public/` are served by Vercel and
 
 | Criterion | How it is addressed | Where to look |
 | --- | --- | --- |
-| Code quality | Small single-purpose modules, none over 200 lines. Pure planning logic is separate from HTTP, AI and the page. Dependencies are passed in. A linter removes dead imports and exports. | `src/`, `public/js/`, `scripts/lint.js`, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Code quality | Small single-purpose modules, none over 200 lines. Pure planning logic is separate from HTTP, AI and the page. Dependencies are passed in. Every public function has a JSDoc comment with typed parameters and results, long functions are split into small named steps, and settings are named constants. A linter removes dead imports and exports. | `src/`, `public/js/`, `scripts/lint.js`, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Security | Server-side validation, safe rendering (no `innerHTML`), strict content security policy, Host and Origin checks, rate limits, size limits, prompt-injection defences, the API key kept in the environment and sent only in a header, and no dependencies to patch. | [docs/SECURITY.md](docs/SECURITY.md), `src/http/`, `src/ai/` |
-| Efficiency | Files are served from memory with Brotli or gzip and ETags, large API answers are compressed, AI ideas are cached, model failover uses cooldowns and a time budget, and planning is a few hundred operations. | `src/http/staticFiles.js`, `src/ai/geminiClient.js` |
-| Testing | 620 automated tests and about 99.9 percent line coverage, covering the planner, the server end to end, the Gemini client and failover, the page logic, accessibility rules, colour contrast and project hygiene. | `tests/`, [docs/TESTING.md](docs/TESTING.md) |
+| Efficiency | Files are served from memory with Brotli or gzip and ETags, large API answers are compressed, AI ideas are cached, model failover uses cooldowns, an 8 second limit per model and a total time budget (a test keeps it below the browser and Vercel limits), and planning is a few hundred operations. | `src/http/staticFiles.js`, `src/ai/geminiClient.js` |
+| Testing | 623 automated tests and about 99.9 percent line coverage, covering the planner, the server end to end, the Gemini client and failover, the page logic, accessibility rules, colour contrast and project hygiene. | `tests/`, [docs/TESTING.md](docs/TESTING.md) |
 | Accessibility | Landmarks, labelled controls, a linked error summary, ARIA tabs with keyboard support, visible focus, contrast checked by tests, light and dark modes, reduced motion and high contrast support, and no information shown by colour alone. | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md), `tests/quality/` |
 | Problem statement alignment | Every requirement of the challenge is delivered. See the table below. | |
 
@@ -178,16 +200,16 @@ The project is ready for Vercel: the pages in `public/` are served by Vercel and
 | Area | Folder | Tests | Result |
 | --- | --- | --- | --- |
 | Planner logic | `tests/planner` | 108 | Passed |
-| Gemini client and AI service | `tests/ai` | 71 | Passed |
+| Gemini client and AI service | `tests/ai` | 73 | Passed |
 | HTTP units, host checks, client address and compression | `tests/http` | 57 | Passed |
-| Server end to end, the program itself and the Vercel functions | `tests/server.test.js`, `tests/entry.test.js`, `tests/vercel.test.js` | 60 | Passed |
+| Server end to end, the program itself and the Vercel functions | `tests/server.test.js`, `tests/entry.test.js`, `tests/vercel.test.js` | 61 | Passed |
 | Page logic, views, chat, print and download | `tests/client` | 167 | Passed |
 | Accessibility, contrast, print, logo and hygiene | `tests/quality` | 157 | Passed |
-| **Total** | | **620** | **All passed, 0 failed** |
+| **Total** | | **623** | **All passed, 0 failed** |
 
 | Coverage measure | Result | Threshold |
 | --- | --- | --- |
-| Lines | 99.88 percent | 95 percent |
+| Lines | 99.90 percent | 95 percent |
 | Branches | 98.51 percent | 90 percent |
 | Functions | 99.78 percent | 95 percent |
 

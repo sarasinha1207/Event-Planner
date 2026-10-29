@@ -17,6 +17,9 @@ const DEFAULT_PUBLIC_DIR = fileURLToPath(new URL('../public/', import.meta.url))
 const MAX_URL_LENGTH = 2048;
 // Smaller answers are not worth the time it takes to compress them.
 const COMPRESS_JSON_ABOVE_BYTES = 1024;
+const REQUEST_TIMEOUT_MS = 30_000;
+const HEADERS_TIMEOUT_MS = 15_000;
+const KEEP_ALIVE_TIMEOUT_MS = 5_000;
 
 function sendJson(req, res, status, payload, headers = {}) {
   let body = Buffer.from(JSON.stringify(payload));
@@ -44,9 +47,14 @@ function parsePathname(req) {
   }
 }
 
-// Builds the function that answers one request. API routes are plain functions
-// over validated JSON. `staticFiles` is optional: on a host that serves the
-// website itself (such as Vercel) only the API is handled here.
+/**
+ * Builds the function that answers one request. API routes are plain functions
+ * over validated JSON. `staticFiles` is optional: on a host that serves the
+ * website itself (such as Vercel) only the API is handled here.
+ *
+ * @param {{ config: object, aiClient: object, logger?: object, now?: () => number, staticFiles?: Map | null }} options
+ * @returns {(req: import('node:http').IncomingMessage, res: import('node:http').ServerResponse) => Promise<void>}
+ */
 export function createRequestHandler({ config, aiClient, logger = silentLogger, now = Date.now, staticFiles = null }) {
   const assistant = createAssistantService({ aiClient, logger, now });
   const router = createRouter(createApiRoutes({ assistant, now }));
@@ -114,12 +122,17 @@ export function createRequestHandler({ config, aiClient, logger = silentLogger, 
   };
 }
 
-// Builds the HTTP server without starting it. Static files are read once at startup.
+/**
+ * Builds the HTTP server without starting it. Static files are read once at startup.
+ *
+ * @param {{ publicDir?: string, config: object, aiClient: object, logger?: object }} options
+ * @returns {Promise<import('node:http').Server>}
+ */
 export async function createApp({ publicDir = DEFAULT_PUBLIC_DIR, ...options }) {
   const staticFiles = await loadStaticFiles(publicDir);
   const server = http.createServer(createRequestHandler({ ...options, staticFiles }));
-  server.requestTimeout = 30_000;
-  server.headersTimeout = 15_000;
-  server.keepAliveTimeout = 5_000;
+  server.requestTimeout = REQUEST_TIMEOUT_MS;
+  server.headersTimeout = HEADERS_TIMEOUT_MS;
+  server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT_MS;
   return server;
 }

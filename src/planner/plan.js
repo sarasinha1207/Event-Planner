@@ -6,7 +6,13 @@ import { buildVendors } from './vendors.js';
 import { budgetTier, selectIdeas } from './ideas.js';
 import { validateEventInput } from './validate.js';
 
-// Builds a complete plan from an already validated event description.
+/**
+ * Builds a complete plan from an already validated event description.
+ *
+ * @param {object} input A validated event description.
+ * @param {string} today ISO date.
+ * @returns {object} The plan.
+ */
 export function buildPlan(input, today) {
   const definition = getEventType(input.eventType);
   const scaler = createDateScaler({
@@ -42,7 +48,13 @@ export function buildPlan(input, today) {
   };
 }
 
-// Validates a raw request and, when it is acceptable, builds the plan.
+/**
+ * Validates a raw request and, when it is acceptable, builds the plan.
+ *
+ * @param {unknown} raw The event as received.
+ * @param {string} today ISO date.
+ * @returns {{ ok: true, plan: object } | { ok: false, errors: { field: string, message: string }[] }}
+ */
 export function planFromRequest(raw, today) {
   const result = validateEventInput(raw, { today });
   if (!result.ok) return result;

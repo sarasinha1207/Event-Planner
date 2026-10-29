@@ -4,6 +4,14 @@
 
 import { percentage } from './format.js';
 
+const isDone = (value) => value === true;
+const isPositiveAmount = (value) => Number.isFinite(value) && value > 0;
+
+/**
+ * Progress with nothing done and nothing spent.
+ *
+ * @returns {{ tasks: object, steps: object, spent: object }}
+ */
 export function emptyProgress() {
   return { tasks: {}, steps: {}, spent: {} };
 }
@@ -15,66 +23,117 @@ function withFlag(map, id, done) {
   return next;
 }
 
+/**
+ * A copy of the progress with one task marked done or not done.
+ *
+ * @param {object} progress
+ * @param {string} id
+ * @param {boolean} done
+ * @returns {object}
+ */
 export function setTaskDone(progress, id, done) {
   return { ...progress, tasks: withFlag(progress.tasks, id, done) };
 }
 
+/**
+ * A copy of the progress with one vendor step marked done or not done.
+ *
+ * @param {object} progress
+ * @param {string} id
+ * @param {boolean} done
+ * @returns {object}
+ */
 export function setStepDone(progress, id, done) {
   return { ...progress, steps: withFlag(progress.steps, id, done) };
 }
 
+/**
+ * A copy of the progress with the amount spent on one category. Zero or invalid amounts remove it.
+ *
+ * @param {object} progress
+ * @param {string} key
+ * @param {number} amount
+ * @returns {object}
+ */
 export function setSpent(progress, key, amount) {
   const spent = { ...progress.spent };
-  if (Number.isFinite(amount) && amount > 0) spent[key] = amount;
+  if (isPositiveAmount(amount)) spent[key] = amount;
   else delete spent[key];
   return { ...progress, spent };
 }
 
-function pickKnown(map, knownIds) {
-  const result = {};
-  for (const id of knownIds) {
-    if (Object.hasOwn(map, id)) result[id] = map[id];
-  }
-  return result;
+// The entries of `map` whose id is known and whose value passes `isValid`.
+function keepValid(map, knownIds, isValid) {
+  const source = map ?? {};
+  return Object.fromEntries(knownIds.filter((id) => Object.hasOwn(source, id) && isValid(source[id])).map((id) => [id, source[id]]));
 }
 
-// Keeps only progress that still refers to something in the plan and that has a
-// valid value. Used after a plan is rebuilt and when loading saved data.
+/**
+ * Keeps only progress that still refers to something in the plan and that has a
+ * valid value. Used after a plan is rebuilt and when loading saved data.
+ *
+ * @param {unknown} raw
+ * @param {object} plan
+ * @returns {object}
+ */
 export function reconcileProgress(raw, plan) {
   const source = raw && typeof raw === 'object' ? raw : {};
-  const tasks = pickKnown(source.tasks ?? {}, plan.timeline.tasks.map((task) => task.id));
+  const taskIds = plan.timeline.tasks.map((task) => task.id);
   const stepIds = plan.vendors.flatMap((vendor) => vendor.checklist.map((step) => step.id));
-  const steps = pickKnown(source.steps ?? {}, stepIds);
-  const spent = pickKnown(source.spent ?? {}, plan.budget.lines.map((line) => line.key));
+  const lineKeys = plan.budget.lines.map((line) => line.key);
 
   return {
-    tasks: Object.fromEntries(Object.keys(tasks).filter((id) => tasks[id] === true).map((id) => [id, true])),
-    steps: Object.fromEntries(Object.keys(steps).filter((id) => steps[id] === true).map((id) => [id, true])),
-    spent: Object.fromEntries(
-      Object.keys(spent)
-        .filter((key) => Number.isFinite(spent[key]) && spent[key] > 0)
-        .map((key) => [key, spent[key]]),
-    ),
+    tasks: keepValid(source.tasks, taskIds, isDone),
+    steps: keepValid(source.steps, stepIds, isDone),
+    spent: keepValid(source.spent, lineKeys, isPositiveAmount),
   };
 }
 
+/**
+ * How many timeline tasks are done.
+ *
+ * @param {object} plan
+ * @param {object} progress
+ * @returns {{ done: number, total: number, percent: number }}
+ */
 export function taskStats(plan, progress) {
   const total = plan.timeline.tasks.length;
   const done = plan.timeline.tasks.filter((task) => progress.tasks[task.id] === true).length;
   return { done, total, percent: percentage(done, total) };
 }
 
+/**
+ * How many steps of one vendor are done.
+ *
+ * @param {object} vendor
+ * @param {object} progress
+ * @returns {{ done: number, total: number }}
+ */
 export function vendorStats(vendor, progress) {
   const total = vendor.checklist.length;
   const done = vendor.checklist.filter((step) => progress.steps[step.id] === true).length;
   return { done, total };
 }
 
+/**
+ * What has been spent in one budget category.
+ *
+ * @param {object} line
+ * @param {object} progress
+ * @returns {{ spent: number, remaining: number, over: boolean }}
+ */
 export function lineSpend(line, progress) {
   const spent = progress.spent[line.key] ?? 0;
   return { spent, remaining: line.amount - spent, over: spent > line.amount };
 }
 
+/**
+ * What has been spent across the whole budget.
+ *
+ * @param {object} plan
+ * @param {object} progress
+ * @returns {{ planned: number, spent: number, remaining: number, over: boolean }}
+ */
 export function spendTotals(plan, progress) {
   const planned = plan.budget.total;
   const spent = plan.budget.lines.reduce((sum, line) => sum + (progress.spent[line.key] ?? 0), 0);

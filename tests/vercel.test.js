@@ -4,6 +4,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { after, before, describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { loadConfig } from '../src/config.js';
 import { SECURITY_HEADERS } from '../src/http/security.js';
 import { createApiRoutes } from '../src/routes/api.js';
 import { addDays, todayIso } from '../src/planner/dates.js';
@@ -47,6 +48,14 @@ describe('Vercel project settings', () => {
     const timeout = Number(/AI_TIMEOUT_MS: '(\d+)'/.exec(read('api', '_handler.js'))[1]);
     assert.ok(maxDuration <= 60, 'within what the free plan allows');
     assert.ok((timeout * 2) / 1000 < maxDuration, 'the time budget for trying models fits inside the limit');
+  });
+
+  it('never makes the browser give up before the server has finished trying models', () => {
+    const browserLimit = Number(/REQUEST_TIMEOUT_MS = ([\d_]+)/.exec(read('public', 'js', 'api.js'))[1].replaceAll('_', ''));
+    const perModel = loadConfig({}).aiTimeoutMs;
+    // The server starts no new model after twice the limit, so the last one may add one more limit.
+    assert.ok(perModel * 3 < browserLimit, `${perModel * 3} ms is not below the browser limit of ${browserLimit} ms`);
+    assert.ok((perModel * 3) / 1000 < vercel.functions['api/*.js'].maxDuration, 'and the function limit');
   });
 
   it('keeps secrets, tests and tooling out of the upload', () => {

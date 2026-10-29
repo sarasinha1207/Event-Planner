@@ -101,6 +101,12 @@ function vendorCard(vendor) {
   );
 }
 
+/**
+ * Builds the printable document for a plan.
+ *
+ * @param {{ plan: object, progress: object, locale: string, today: string }} options
+ * @returns {HTMLElement}
+ */
 export function buildPrintSheet({ plan, progress, locale, today }) {
   const report = buildReport(plan, progress, { locale, today });
 

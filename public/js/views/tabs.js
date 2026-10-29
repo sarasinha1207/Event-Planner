@@ -1,8 +1,13 @@
 import { h } from '../dom.js';
 import { icon } from '../icons.js';
 
-// Tabs following the WAI-ARIA tabs pattern: arrow keys move between tabs,
-// Home and End jump to the ends, and only the selected tab is in the tab order.
+/**
+ * Tabs following the WAI-ARIA tabs pattern: arrow keys move between tabs,
+ * Home and End jump to the ends, and only the selected tab is in the tab order.
+ *
+ * @param {{ label: string, tabs: object[], initial?: number }} options
+ * @returns {object}
+ */
 export function createTabs({ label, tabs, initial = 0 }) {
   let selected = initial;
 

@@ -12,11 +12,23 @@ export const SUGGESTIONS = Object.freeze([
 
 export const GREETING = 'Hello! I am your planning assistant. Ask me about budgets, timelines, vendors or ideas.';
 
+/**
+ * The caption under a reply that says which assistant wrote it.
+ *
+ * @param {{ source: string, model?: string }} message
+ * @returns {string}
+ */
 export function sourceLabel({ source, model }) {
   if (source === 'ai') return model ? `Gemini - ${model}` : 'Gemini';
   return 'Built-in assistant';
 }
 
+/**
+ * One chat message as an element.
+ *
+ * @param {{ role: string, text: string }} message
+ * @returns {HTMLElement}
+ */
 export function messageNode(message) {
   const fromBot = message.role === 'model';
   const classes = ['chat-message', fromBot ? 'chat-message-bot' : 'chat-message-user'];
@@ -34,6 +46,12 @@ export function messageNode(message) {
   );
 }
 
+/**
+ * Buttons with example questions.
+ *
+ * @param {(text: string) => void} onPick
+ * @returns {HTMLElement}
+ */
 export function suggestionsNode(onPick) {
   return h(
     'div',
@@ -42,6 +60,11 @@ export function suggestionsNode(onPick) {
   );
 }
 
+/**
+ * The indicator shown while a reply is on its way.
+ *
+ * @returns {HTMLElement}
+ */
 export function typingNode() {
   return h(
     'div',

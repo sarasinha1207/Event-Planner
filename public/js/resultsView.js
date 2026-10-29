@@ -16,9 +16,14 @@ function actionButton(label, iconName, onClick) {
   return h('button', { type: 'button', class: 'button button-secondary', on: { click: onClick } }, icon(iconName), h('span', { text: label }));
 }
 
-// `actions` supplies what the views cannot do themselves:
-// onProgressChange(progress), onRequestAiIdeas(), onAsk(question),
-// onDownload(), onPrint() and onEditDetails().
+/**
+ * `actions` supplies what the views cannot do themselves:
+ * onProgressChange(progress), onRequestAiIdeas(), onAsk(question),
+ * onDownload(), onPrint() and onEditDetails().
+ *
+ * @param {object} options Plan, progress, meta, today, locale and the page actions.
+ * @returns {{ nodes: HTMLElement[], ideas: object, ask: object }}
+ */
 export function buildResults({ plan, progress, meta, today, locale, actions }) {
   const summary = createSummary({ plan, progress, today, locale });
 

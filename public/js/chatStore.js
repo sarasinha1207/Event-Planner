@@ -6,6 +6,12 @@ export const MAX_STORED_MESSAGES = 30;
 
 const ROLES = ['user', 'model'];
 
+/**
+ * Whether a value is a well-formed chat message.
+ *
+ * @param {unknown} value
+ * @returns {boolean}
+ */
 export function isMessage(value) {
   return (
     value !== null &&
@@ -18,6 +24,11 @@ export function isMessage(value) {
   );
 }
 
+/**
+ * The tab's session storage, or null when it is missing or blocked.
+ *
+ * @returns {Storage | null}
+ */
 export function sessionStorageOrNull() {
   try {
     return globalThis.sessionStorage ?? null;
@@ -26,6 +37,12 @@ export function sessionStorageOrNull() {
   }
 }
 
+/**
+ * Creates the store that keeps the conversation for the length of the tab.
+ *
+ * @param {Storage | null} storage
+ * @returns {{ load: Function, save: Function, clear: Function }}
+ */
 export function createChatStore(storage) {
   function load() {
     if (!storage) return [];

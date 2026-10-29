@@ -2,6 +2,12 @@ import { h } from '../dom.js';
 import { formatDate, formatMoney, pluralize } from '../format.js';
 import { vendorStats } from '../progress.js';
 
+/**
+ * The Vendors tab.
+ *
+ * @param {{ plan: object, progress: object, locale: string, onToggleStep: Function }} options
+ * @returns {object}
+ */
 export function createVendorsView({ plan, progress, locale, onToggleStep }) {
   const money = (amount) => formatMoney(amount, plan.budget.currency, locale);
   let current = progress;

@@ -74,6 +74,12 @@ const ICON_SHAPES = Object.freeze({
 
 export const ICON_NAMES = Object.freeze(Object.keys(ICON_SHAPES));
 
+/**
+ * Whether an icon with this name exists.
+ *
+ * @param {string} name
+ * @returns {boolean}
+ */
 export function hasIcon(name) {
   return ICON_NAMES.includes(name);
 }
@@ -84,6 +90,12 @@ function svgElement(tag, attributes) {
   return node;
 }
 
+/**
+ * Builds the SVG for an icon. Unknown names give an empty graphic.
+ *
+ * @param {string} name
+ * @returns {SVGElement}
+ */
 export function icon(name) {
   if (!hasIcon(name)) throw new RangeError(`Unknown icon: ${name}`);
   const svg = svgElement('svg', { viewBox: '0 0 24 24', class: 'icon', 'aria-hidden': 'true', focusable: 'false' });
@@ -91,8 +103,13 @@ export function icon(name) {
   return svg;
 }
 
-// Fills every element marked with data-icon="name". Unknown names are ignored
-// so a typo can never break the page.
+/**
+ * Fills every element marked with data-icon="name". Unknown names are ignored
+ * so a typo can never break the page.
+ *
+ * @param {ParentNode} root
+ * @returns {void}
+ */
 export function hydrateIcons(root) {
   for (const slot of root.querySelectorAll('[data-icon]')) {
     const name = slot.getAttribute('data-icon');

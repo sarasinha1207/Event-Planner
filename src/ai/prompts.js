@@ -14,6 +14,13 @@ const MAX_TITLE_LENGTH = 80;
 const MAX_DETAIL_LENGTH = 300;
 const MAX_CATEGORY_LENGTH = 40;
 
+/**
+ * Makes user text safe to place inside a prompt: no angle brackets, single spaces, limited length.
+ *
+ * @param {unknown} value
+ * @param {number} maxLength
+ * @returns {string}
+ */
 export function sanitizeForPrompt(value, maxLength) {
   return String(value ?? '')
     .replace(/[<>]/g, ' ')
@@ -44,6 +51,12 @@ export const CHAT_SYSTEM_PROMPT =
   "ideas. Plans are stored only in the visitor's browser. Answer in at most 120 words. If <event_details> is present, " +
   'use it to personalise the answer; otherwise give general guidance and suggest creating a plan for exact figures.';
 
+/**
+ * Describes a plan inside an <event_details> block that the model is told to treat as data.
+ *
+ * @param {object} plan
+ * @returns {string}
+ */
 export function describeEvent(plan) {
   const { input, summary, budget } = plan;
   const topLines = [...budget.lines]
@@ -67,10 +80,23 @@ export function describeEvent(plan) {
   ].join('\n');
 }
 
+/**
+ * The prompt that asks for personalised ideas.
+ *
+ * @param {object} plan
+ * @returns {string}
+ */
 export function buildIdeasPrompt(plan) {
   return `${describeEvent(plan)}\n\nSuggest ${MAX_AI_IDEAS} personalised ideas for this event.`;
 }
 
+/**
+ * The prompt for a question about a plan.
+ *
+ * @param {object} plan
+ * @param {string} question
+ * @returns {string}
+ */
 export function buildAskPrompt(plan, question) {
   const safeQuestion = sanitizeForPrompt(question, MAX_QUESTION_LENGTH);
   return `${describeEvent(plan)}\n\n<question>${safeQuestion}</question>`;
@@ -80,8 +106,13 @@ function clean(value, maxLength) {
   return typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, maxLength) : '';
 }
 
-// Accepts a JSON array, optionally wrapped in a code fence or surrounding text,
-// and keeps only well-formed entries.
+/**
+ * Accepts a JSON array, optionally wrapped in a code fence or surrounding text,
+ * and keeps only well-formed entries.
+ *
+ * @param {string} text The model's reply.
+ * @returns {object[]} Valid ideas, or an empty list.
+ */
 export function parseIdeasResponse(text) {
   const start = text.indexOf('[');
   const end = text.lastIndexOf(']');
@@ -106,12 +137,24 @@ export function parseIdeasResponse(text) {
     .slice(0, MAX_AI_IDEAS);
 }
 
+/**
+ * The prompt for a chat message. The plan is optional context.
+ *
+ * @param {object | null} plan
+ * @param {string} message
+ * @returns {string}
+ */
 export function buildChatPrompt(plan, message) {
   const question = `<question>${sanitizeForPrompt(message, MAX_QUESTION_LENGTH)}</question>`;
   return plan ? `${describeEvent(plan)}\n\n${question}` : question;
 }
 
-// Earlier turns come from the browser, so they are treated as untrusted too.
+/**
+ * Earlier turns come from the browser, so they are treated as untrusted too.
+ *
+ * @param {{ role: string, text: string }[]} history
+ * @returns {{ role: string, text: string }[]}
+ */
 export function sanitizeHistory(history) {
   return history
     .slice(-MAX_HISTORY_TURNS)
@@ -119,6 +162,12 @@ export function sanitizeHistory(history) {
     .filter((turn) => turn.text.length > 0);
 }
 
+/**
+ * Trims a model reply and limits its length.
+ *
+ * @param {string} text
+ * @returns {string}
+ */
 export function cleanAnswer(text) {
   return text.replace(/\s+\n/g, '\n').trim().slice(0, MAX_ANSWER_LENGTH);
 }

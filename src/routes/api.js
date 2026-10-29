@@ -5,8 +5,14 @@ import { planFromRequest } from '../planner/plan.js';
 import { LIMITS, cleanText } from '../planner/validate.js';
 import { MAX_HISTORY_TEXT, MAX_HISTORY_TURNS, MAX_QUESTION_LENGTH } from '../ai/prompts.js';
 
-// The client sends its own calendar date so "today" matches the user's time
-// zone. It is only trusted when it is within one day of the server's date.
+/**
+ * The client sends its own calendar date so "today" matches the user's time
+ * zone. It is only trusted when it is within one day of the server's date.
+ *
+ * @param {unknown} candidate The client's date.
+ * @param {number} nowMs
+ * @returns {string}
+ */
 export function resolveToday(candidate, nowMs) {
   const serverToday = todayIso(new Date(nowMs));
   const usable =
@@ -32,8 +38,13 @@ function requireText(value, field) {
   return text;
 }
 
-// Earlier chat turns, oldest first. Anything malformed is dropped rather than
-// rejected, so a stale browser can never block the chat.
+/**
+ * Earlier chat turns, oldest first. Anything malformed is dropped rather than
+ * rejected, so a stale browser can never block the chat.
+ *
+ * @param {unknown} raw
+ * @returns {{ role: string, text: string }[]}
+ */
 export function parseHistory(raw) {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -41,6 +52,26 @@ export function parseHistory(raw) {
     .slice(-MAX_HISTORY_TURNS)
     .map((turn) => ({ role: turn.role, text: cleanText(turn.text).slice(0, MAX_HISTORY_TEXT) }))
     .filter((turn) => turn.text.length > 0);
+}
+
+// The settings the web client needs to build its form and to know which limits apply.
+function describeMeta(aiEnabled) {
+  return {
+    eventTypes: describeEventTypes(),
+    currencies: describeCurrencies(),
+    maxPriorities: MAX_PRIORITIES,
+    limits: {
+      nameMax: LIMITS.nameMax,
+      locationMax: LIMITS.locationMax,
+      themeMax: LIMITS.themeMax,
+      interestsMax: LIMITS.interestsMax,
+      guestsMax: LIMITS.guestsMax,
+      budgetMin: LIMITS.budgetMin,
+      questionMax: MAX_QUESTION_LENGTH,
+      historyMax: MAX_HISTORY_TURNS,
+    },
+    aiEnabled,
+  };
 }
 
 // Each route is { method, path, limit, handler }. Handlers receive the parsed
@@ -57,22 +88,7 @@ export function createApiRoutes({ assistant, now = Date.now }) {
       method: 'GET',
       path: '/api/meta',
       limit: 'general',
-      handler: () => ({
-        eventTypes: describeEventTypes(),
-        currencies: describeCurrencies(),
-        maxPriorities: MAX_PRIORITIES,
-        limits: {
-          nameMax: LIMITS.nameMax,
-          locationMax: LIMITS.locationMax,
-          themeMax: LIMITS.themeMax,
-          interestsMax: LIMITS.interestsMax,
-          guestsMax: LIMITS.guestsMax,
-          budgetMin: LIMITS.budgetMin,
-          questionMax: MAX_QUESTION_LENGTH,
-          historyMax: MAX_HISTORY_TURNS,
-        },
-        aiEnabled: assistant.enabled,
-      }),
+      handler: () => describeMeta(assistant.enabled),
     },
     {
       method: 'POST',

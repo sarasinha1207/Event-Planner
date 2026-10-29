@@ -6,6 +6,12 @@ export const SOURCE_LABELS = Object.freeze({
   builtin: 'Selected by the built-in planner using your theme, guest count and budget.',
 });
 
+/**
+ * Groups ideas by category, keeping the order in which categories first appear.
+ *
+ * @param {{ category: string }[]} items
+ * @returns {{ category: string, entries: object[] }[]}
+ */
 export function groupByCategory(items) {
   const groups = new Map();
   for (const item of items) {
@@ -27,6 +33,12 @@ function ideaCard(idea) {
   );
 }
 
+/**
+ * The Ideas tab.
+ *
+ * @param {{ ideas: object, aiEnabled: boolean, onRequestAi: () => void }} options
+ * @returns {object}
+ */
 export function createIdeasView({ ideas, aiEnabled, onRequestAi }) {
   const sourceNote = h('p', { class: 'source-note' });
   const list = h('div', { class: 'idea-groups' });

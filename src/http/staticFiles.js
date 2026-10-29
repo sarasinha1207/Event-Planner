@@ -14,6 +14,8 @@ const MIME_TYPES = Object.freeze({
 });
 
 const COMPRESSIBLE = new Set(['.html', '.css', '.js', '.json', '.svg', '.txt']);
+// Files are compressed once at startup, so the slowest and smallest setting is used.
+const BROTLI_QUALITY = 11;
 
 async function listFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -26,9 +28,14 @@ async function listFiles(directory) {
   return nested.flat();
 }
 
-// Loads every file under `root` into memory once at startup. Requests are
-// answered by exact lookup in this table, so a request path can never reach a
-// file that was not in the public folder.
+/**
+ * Loads every file under `root` into memory once at startup. Requests are
+ * answered by exact lookup in this table, so a request path can never reach a
+ * file that was not in the public folder.
+ *
+ * @param {string} root Folder that holds the website files.
+ * @returns {Promise<Map<string, object>>}
+ */
 export async function loadStaticFiles(root) {
   const files = new Map();
   for (const filePath of await listFiles(root)) {
@@ -42,7 +49,7 @@ export async function loadStaticFiles(root) {
       type,
       body,
       gzip: COMPRESSIBLE.has(extension) ? gzipSync(body) : null,
-      br: COMPRESSIBLE.has(extension) ? brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: 11 } }) : null,
+      br: COMPRESSIBLE.has(extension) ? brotliCompressSync(body, { params: { [constants.BROTLI_PARAM_QUALITY]: BROTLI_QUALITY } }) : null,
       etag: `"${createHash('sha256').update(body).digest('base64url').slice(0, 27)}"`,
     });
   }
@@ -59,6 +66,23 @@ function lookupPath(rawPath) {
   return decoded === '/' ? '/index.html' : decoded;
 }
 
+// Brotli is preferred over gzip, and either is used only if the file has it and the browser accepts it.
+function chooseEncoding(file, acceptEncoding) {
+  if (file.br && /\bbr\b/.test(acceptEncoding)) return 'br';
+  if (file.gzip && /\bgzip\b/.test(acceptEncoding)) return 'gzip';
+  return null;
+}
+
+/**
+ * Answers a GET or HEAD request for a file in the table, with caching and compression.
+ *
+ * @param {import('node:http').IncomingMessage} req
+ * @param {import('node:http').ServerResponse} res
+ * @param {string} pathname
+ * @param {Map<string, object>} files From `loadStaticFiles`.
+ * @returns {void}
+ * @throws {HttpError} 400, 404 or 405.
+ */
 export function serveStatic(req, res, pathname, files) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     throw new HttpError(405, 'Method not allowed.', { headers: { Allow: 'GET, HEAD' } });
@@ -78,8 +102,7 @@ export function serveStatic(req, res, pathname, files) {
     return;
   }
 
-  const accepted = String(req.headers['accept-encoding'] ?? '');
-  const encoding = file.br && /\bbr\b/.test(accepted) ? 'br' : file.gzip && /\bgzip\b/.test(accepted) ? 'gzip' : null;
+  const encoding = chooseEncoding(file, String(req.headers['accept-encoding'] ?? ''));
   const body = encoding ? file[encoding] : file.body;
   if (encoding) res.setHeader('Content-Encoding', encoding);
   res.setHeader('Content-Length', body.length);
