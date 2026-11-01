@@ -3,14 +3,6 @@
 
 const PROPERTY_NAMES = new Set(['checked', 'value', 'disabled', 'hidden', 'open', 'selected']);
 
-/**
- * Builds an element. Text is always attached as text, never parsed as HTML, so plan content cannot inject markup.
- *
- * @param {string} tag
- * @param {Record<string, unknown>} [props] `class`, `text` and `on` are special; the rest become attributes or properties.
- * @param {...unknown} children Nodes or lists of nodes. Null and false are skipped.
- * @returns {HTMLElement}
- */
 export function h(tag, props = {}, ...children) {
   const node = document.createElement(tag);
 

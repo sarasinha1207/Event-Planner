@@ -19,12 +19,6 @@ import { markStep } from './stepper.js';
 const CLEAR_MESSAGE = 'Clear your saved plan? This cannot be undone.';
 const AI_UNAVAILABLE_MESSAGE = 'The AI assistant is unavailable right now, so built-in ideas are shown.';
 
-/**
- * Creates the Plan an event page. Every outside dependency is a parameter, so it can be tested without a browser.
- *
- * @param {object} options Elements, api, store, locale and the optional clock, confetti, download and scheduler.
- * @returns {{ init: () => Promise<void>, state: object }}
- */
 export function createPlannerPage({
   els,
   api,

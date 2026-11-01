@@ -9,12 +9,7 @@ const WIDTH = 78;
 const RULE = '='.repeat(WIDTH);
 const NOTES_LINE = '_'.repeat(WIDTH - 6);
 
-/**
- * Turns an event name into a safe download file name.
- *
- * @param {string} name
- * @returns {string}
- */
+// Turns an event name into a safe download file name.
 export function fileSlug(name) {
   const slug = String(name)
     .toLowerCase()
@@ -24,14 +19,7 @@ export function fileSlug(name) {
   return slug || 'event';
 }
 
-/**
- * Wraps text to the page width. `first` prefixes the first line and `rest` the others.
- *
- * @param {string} text
- * @param {string} first Prefix of the first line.
- * @param {string} [rest] Prefix of the other lines.
- * @returns {string[]}
- */
+// Wraps text to the page width. `first` prefixes the first line and `rest` the others.
 export function wrap(text, first, rest = ' '.repeat(first.length)) {
   const lines = [];
   let line = first;
@@ -98,15 +86,6 @@ function vendorLines(vendors) {
   ]);
 }
 
-/**
- * Builds the plain-text copy of a plan, laid out as points and checklists.
- *
- * @param {object} plan
- * @param {object} progress
- * @param {string} [locale]
- * @param {string} [today] ISO date.
- * @returns {string}
- */
 export function planToText(plan, progress, locale = 'en', today = localTodayIso()) {
   const report = buildReport(plan, progress, { locale, today });
   const points = (items) => items.flatMap(({ label, value }) => wrap(`${label}: ${value}`, '* '));

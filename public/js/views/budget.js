@@ -2,55 +2,29 @@ import { h } from '../dom.js';
 import { formatMoney } from '../format.js';
 import { lineSpend, spendTotals } from '../progress.js';
 
-const COLUMN_HEADINGS = Object.freeze(['Category', 'Share', 'Planned', 'Spent so far', 'Remaining']);
-
-/**
- * Reads an amount typed by the visitor. Anything that is not a positive number counts as zero.
- *
- * @param {string} text
- * @returns {number}
- */
 export function parseAmount(text) {
   const value = Number(String(text).trim());
   return String(text).trim() !== '' && Number.isFinite(value) && value > 0 ? value : 0;
 }
 
-// A thin bar showing each category's share relative to the largest one.
-function shareBar(line, largestShare) {
-  const fill = h('span', { class: 'bar-fill' });
-  fill.style.setProperty('--fill', String(Math.round((line.share / largestShare) * 100)));
-  return h('span', { class: 'bar', 'aria-hidden': 'true' }, fill);
-}
-
-function tableHead() {
-  return h('thead', {}, h('tr', {}, COLUMN_HEADINGS.map((text) => h('th', { scope: 'col', text }))));
-}
-
-/**
- * The Budget tab: a table where the visitor enters what has been spent.
- *
- * @param {{ plan: object, progress: object, locale: string, onSpentChange: (key: string, amount: number) => void }} options
- * @returns {{ element: HTMLElement }}
- */
 export function createBudgetView({ plan, progress, locale, onSpentChange }) {
   const money = (amount) => formatMoney(amount, plan.budget.currency, locale);
-  const largestShare = Math.max(...plan.budget.lines.map((line) => line.share));
-  const totalSpent = h('td');
-  const totalRemaining = h('td');
   let current = progress;
 
   function remainingText({ remaining, over }) {
     return over ? `Over by ${money(-remaining)}` : `${money(remaining)} left`;
   }
 
-  function paintTotals() {
-    const totals = spendTotals(plan, current);
-    totalSpent.textContent = money(totals.spent);
-    totalRemaining.textContent = remainingText(totals);
-    totalRemaining.classList.toggle('is-over', totals.over);
+  const largestShare = Math.max(...plan.budget.lines.map((line) => line.share));
+
+  // A thin bar showing each category's share relative to the largest one.
+  function shareBar(line) {
+    const fill = h('span', { class: 'bar-fill' });
+    fill.style.setProperty('--fill', String(Math.round((line.share / largestShare) * 100)));
+    return h('span', { class: 'bar', 'aria-hidden': 'true' }, fill);
   }
 
-  function createRow(line) {
+  const rows = plan.budget.lines.map((line) => {
     const remainingCell = h('td', { 'data-label': 'Remaining' });
     const input = h('input', {
       type: 'number',
@@ -79,7 +53,7 @@ export function createBudgetView({ plan, progress, locale, onSpentChange }) {
 
     paint(lineSpend(line, current));
 
-    return h(
+    const row = h(
       'tr',
       {},
       h(
@@ -90,18 +64,42 @@ export function createBudgetView({ plan, progress, locale, onSpentChange }) {
         h('span', { class: 'cell-hint', text: line.hint }),
       ),
       h('td', { 'data-label': 'Share', text: `${line.share}%` }),
-      h('td', { 'data-label': 'Planned' }, h('span', { text: money(line.amount) }), shareBar(line, largestShare)),
+      h('td', { 'data-label': 'Planned' }, h('span', { text: money(line.amount) }), shareBar(line)),
       h('td', { 'data-label': 'Spent' }, input),
       remainingCell,
     );
+    return row;
+  });
+
+  const totalSpent = h('td');
+  const totalRemaining = h('td');
+
+  function paintTotals() {
+    const totals = spendTotals(plan, current);
+    totalSpent.textContent = money(totals.spent);
+    totalRemaining.textContent = remainingText(totals);
+    totalRemaining.classList.toggle('is-over', totals.over);
   }
+  paintTotals();
 
   const table = h(
     'table',
     { class: 'data-table' },
     h('caption', { class: 'visually-hidden', text: `Budget breakdown in ${plan.budget.currency}` }),
-    tableHead(),
-    h('tbody', {}, plan.budget.lines.map(createRow)),
+    h(
+      'thead',
+      {},
+      h(
+        'tr',
+        {},
+        h('th', { scope: 'col', text: 'Category' }),
+        h('th', { scope: 'col', text: 'Share' }),
+        h('th', { scope: 'col', text: 'Planned' }),
+        h('th', { scope: 'col', text: 'Spent so far' }),
+        h('th', { scope: 'col', text: 'Remaining' }),
+      ),
+    ),
+    h('tbody', {}, rows),
     h(
       'tfoot',
       {},
@@ -116,7 +114,6 @@ export function createBudgetView({ plan, progress, locale, onSpentChange }) {
       ),
     ),
   );
-  paintTotals();
 
   const element = h(
     'div',

@@ -1,12 +1,6 @@
 import { h } from '../dom.js';
 import { describeDue, formatDate } from '../format.js';
 
-/**
- * Groups consecutive tasks that share a phase.
- *
- * @param {{ phase: string }[]} tasks
- * @returns {{ phase: string, tasks: object[] }[]}
- */
 export function groupByPhase(tasks) {
   const groups = [];
   for (const task of tasks) {
@@ -17,12 +11,6 @@ export function groupByPhase(tasks) {
   return groups;
 }
 
-/**
- * The Timeline tab.
- *
- * @param {{ plan: object, progress: object, today: string, locale: string, onToggle: Function }} options
- * @returns {object}
- */
 export function createTimelineView({ plan, progress, today, locale, onToggle }) {
   function createTask(task) {
     const done = progress.tasks[task.id] === true;

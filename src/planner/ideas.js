@@ -7,13 +7,6 @@ const STOP_WORDS = new Set([
 
 const DEFAULT_IDEA_COUNT = 8;
 
-/**
- * Classifies the spend per guest as essential, balanced or premium for this event type.
- *
- * @param {object} definition
- * @param {object} input A validated event description.
- * @returns {'essential' | 'balanced' | 'premium'}
- */
 export function budgetTier(definition, input) {
   const perGuestUsd = (input.totalBudget / input.guestCount) * CURRENCIES[input.currency].usdRate;
   const [essentialBelow, balancedBelow] = definition.tierThresholdsUsd;
@@ -26,12 +19,6 @@ function normalise(word) {
   return word.length > 3 && word.endsWith('s') ? word.slice(0, -1) : word;
 }
 
-/**
- * Lower-cased words of at least three letters, without common filler words.
- *
- * @param {unknown} text
- * @returns {Set<string>}
- */
 export function extractKeywords(text) {
   const words = String(text ?? '')
     .toLowerCase()
@@ -50,53 +37,34 @@ function matchedKeywords(idea, keywords) {
   return idea.tags.filter((tag) => keywords.has(normalise(tag)));
 }
 
-// Ideas that fit the guest count and budget, best keyword matches first. The
-// original order breaks ties, so results are stable.
-function rankIdeas(definition, input, tier, keywords) {
-  return definition.ideas
+// Picks ideas that fit the guest count and budget, favours those matching the
+// stated theme and interests, then fills the rest with one idea per category in
+// turn so the list stays varied.
+export function selectIdeas(definition, input, count = DEFAULT_IDEA_COUNT) {
+  const tier = budgetTier(definition, input);
+  const keywords = extractKeywords(`${input.theme} ${input.interests}`);
+
+  const ranked = definition.ideas
     .filter((idea) => isEligible(idea, input, tier))
     .map((idea, index) => ({ idea, index, matches: matchedKeywords(idea, keywords) }))
     .sort((a, b) => b.matches.length - a.matches.length || a.index - b.index);
-}
 
-// Groups the entries that were not already chosen by category, keeping their rank.
-function queueByCategory(ranked, chosen) {
+  const picked = ranked.filter((entry) => entry.matches.length > 0).slice(0, Math.ceil(count / 2));
+  const chosen = new Set(picked);
+
   const queues = new Map();
   for (const entry of ranked) {
     if (chosen.has(entry)) continue;
     if (!queues.has(entry.idea.category)) queues.set(entry.idea.category, []);
     queues.get(entry.idea.category).push(entry);
   }
-  return queues;
-}
 
-// Takes one idea from each category in turn until `picked` has `count` entries.
-function fillRoundRobin(picked, queues, count) {
   while (picked.length < count && [...queues.values()].some((queue) => queue.length > 0)) {
     for (const queue of queues.values()) {
       if (picked.length >= count) break;
       if (queue.length > 0) picked.push(queue.shift());
     }
   }
-}
-
-/**
- * Picks ideas that fit the guest count and budget, favours those matching the
- * stated theme and interests, then fills the rest with one idea per category in
- * turn so the list stays varied.
- *
- * @param {object} definition The event type definition.
- * @param {object} input A validated event description.
- * @param {number} [count] How many ideas to return.
- * @returns {{ title: string, detail: string, category: string, matchedOn: string[] }[]}
- */
-export function selectIdeas(definition, input, count = DEFAULT_IDEA_COUNT) {
-  const tier = budgetTier(definition, input);
-  const keywords = extractKeywords(`${input.theme} ${input.interests}`);
-  const ranked = rankIdeas(definition, input, tier, keywords);
-
-  const picked = ranked.filter((entry) => entry.matches.length > 0).slice(0, Math.ceil(count / 2));
-  fillRoundRobin(picked, queueByCategory(ranked, new Set(picked)), count);
 
   return picked.map(({ idea, matches }) => ({
     title: idea.title,

@@ -1,11 +1,6 @@
 const PURGE_THRESHOLD = 5000;
 
-/**
- * Fixed-window request counter keyed by client address.
- *
- * @param {{ windowMs: number, max: number, now?: () => number }} options
- * @returns {{ check: (key: string) => { allowed: boolean, retryAfterSeconds: number }, size: number }}
- */
+// Fixed-window request counter keyed by client address.
 export function createRateLimiter({ windowMs, max, now = Date.now }) {
   const windows = new Map();
 

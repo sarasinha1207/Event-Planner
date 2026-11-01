@@ -2,12 +2,7 @@
 
 const MS_PER_DAY = 86_400_000;
 
-/**
- * Uses the browser's language for number and date formats when it is supported.
- *
- * @param {string} language
- * @returns {string}
- */
+// Uses the browser's language for number and date formats when it is supported.
 export function pickLocale(language) {
   try {
     return Intl.NumberFormat.supportedLocalesOf([language]).length > 0 ? language : 'en';
@@ -16,14 +11,6 @@ export function pickLocale(language) {
   }
 }
 
-/**
- * Formats a whole amount in a currency without decimals.
- *
- * @param {number} amount
- * @param {string} currency
- * @param {string} [locale]
- * @returns {string}
- */
 export function formatMoney(amount, currency, locale = 'en') {
   return new Intl.NumberFormat(locale, {
     style: 'currency',
@@ -37,14 +24,8 @@ function parseIso(iso) {
   return Date.UTC(year, month - 1, day);
 }
 
-/**
- * Dates are calendar dates, so they are always formatted in UTC to avoid the
- * off-by-one-day errors that time zones cause.
- *
- * @param {string} iso
- * @param {string} [locale]
- * @returns {string}
- */
+// Dates are calendar dates, so they are always formatted in UTC to avoid the
+// off-by-one-day errors that time zones cause.
 export function formatDate(iso, locale = 'en') {
   return new Intl.DateTimeFormat(locale, {
     weekday: 'short',
@@ -55,12 +36,6 @@ export function formatDate(iso, locale = 'en') {
   }).format(parseIso(iso));
 }
 
-/**
- * Today's date in the visitor's own time zone as YYYY-MM-DD.
- *
- * @param {Date} [date]
- * @returns {string}
- */
 export function localTodayIso(date = new Date()) {
   const year = String(date.getFullYear()).padStart(4, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -68,49 +43,20 @@ export function localTodayIso(date = new Date()) {
   return `${year}-${month}-${day}`;
 }
 
-/**
- * Whole days from one ISO date to another; negative when the second is earlier.
- *
- * @param {string} fromIso
- * @param {string} toIso
- * @returns {number}
- */
 export function daysBetween(fromIso, toIso) {
   return Math.round((parseIso(toIso) - parseIso(fromIso)) / MS_PER_DAY);
 }
 
-/**
- * Joins a count and a word, for example `1 day` or `2 days`.
- *
- * @param {number} count
- * @param {string} singular
- * @param {string} [plural]
- * @returns {string}
- */
 export function pluralize(count, singular, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
-/**
- * A whole-number percentage, or 0 when there is nothing to divide by.
- *
- * @param {number} part
- * @param {number} whole
- * @returns {number}
- */
 export function percentage(part, whole) {
   return whole > 0 ? Math.round((part / whole) * 100) : 0;
 }
 
-/**
- * Describes how a due date relates to today. `state` drives styling, while
- * `text` always carries the meaning so colour is never the only signal.
- *
- * @param {string} dueIso
- * @param {string} todayIso
- * @param {boolean} done
- * @returns {{ state: string, text: string }}
- */
+// Describes how a due date relates to today. `state` drives styling, while
+// `text` always carries the meaning so colour is never the only signal.
 export function describeDue(dueIso, todayIso, done) {
   if (done) return { state: 'done', text: 'Done' };
   const days = daysBetween(todayIso, dueIso);

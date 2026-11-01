@@ -17,12 +17,6 @@ const CONTROL_CHARACTERS = /\p{Cc}/gu;
 // Bidirectional overrides can make text render differently from how it is stored.
 const BIDI_OVERRIDES = /[‪-‮⁦-⁩]/g;
 
-/**
- * Removes control and direction-override characters and collapses white space.
- *
- * @param {unknown} value
- * @returns {string} Empty for anything that is not text.
- */
 export function cleanText(value) {
   if (typeof value !== 'string') return '';
   return value.replace(CONTROL_CHARACTERS, ' ').replace(BIDI_OVERRIDES, '').replace(/\s+/g, ' ').trim();
@@ -76,51 +70,8 @@ function validatePriorities(raw, definition, fail) {
   return unique;
 }
 
-function validateEventName(raw, fail) {
-  const name = cleanText(raw);
-  if (name.length === 0) fail('eventName', 'Enter a name for your event.');
-  else if (name.length > LIMITS.nameMax) fail('eventName', `Event name must be ${LIMITS.nameMax} characters or fewer.`);
-  return name;
-}
-
-function validateEventDate(raw, today, fail) {
-  const date = typeof raw === 'string' ? raw : '';
-  if (!parseIsoDate(date)) fail('eventDate', 'Enter the event date as a valid date.');
-  else if (date < today) fail('eventDate', 'The event date must be today or later.');
-  else if (date > addDays(today, LIMITS.planningHorizonDays)) fail('eventDate', 'The event date must be within the next five years.');
-  return date;
-}
-
-function validateGuestCount(raw, fail) {
-  const count = toInteger(raw);
-  if (count === null || count < 1 || count > LIMITS.guestsMax) {
-    fail('guestCount', `Enter a guest count between 1 and ${LIMITS.guestsMax}.`);
-  }
-  return count;
-}
-
-function validateBudget(raw, fail) {
-  const amount = toAmount(raw);
-  if (amount === null || amount < LIMITS.budgetMin || amount > LIMITS.budgetMax) {
-    fail('totalBudget', `Enter a total budget between ${LIMITS.budgetMin} and ${LIMITS.budgetMax.toLocaleString('en-US')}.`);
-  }
-  return amount;
-}
-
-function validateCurrency(raw, fail) {
-  const currency = typeof raw === 'string' ? raw : '';
-  if (!Object.hasOwn(CURRENCIES, currency)) fail('currency', 'Choose a supported currency.');
-  return currency;
-}
-
-/**
- * Validates and normalises an event description. Only known fields are copied
- * across, so unexpected properties in the request never reach the planner.
- *
- * @param {unknown} raw The request body's event, as received.
- * @param {{ today: string }} context `today` is an ISO date (YYYY-MM-DD).
- * @returns {{ ok: true, value: object } | { ok: false, errors: { field: string, message: string }[] }}
- */
+// Validates and normalises an event description. Only known fields are copied
+// across, so unexpected properties in the request never reach the planner.
 export function validateEventInput(raw, { today }) {
   if (!isPlainObject(raw)) {
     return { ok: false, errors: [{ field: 'body', message: 'Request body must be a JSON object.' }] };
@@ -132,18 +83,52 @@ export function validateEventInput(raw, { today }) {
   const definition = getEventType(raw.eventType);
   if (!definition) fail('eventType', 'Choose a wedding, birthday or community event.');
 
-  const value = {
-    eventName: validateEventName(raw.eventName, fail),
-    eventDate: validateEventDate(raw.eventDate, today, fail),
-    guestCount: validateGuestCount(raw.guestCount, fail),
-    totalBudget: validateBudget(raw.totalBudget, fail),
-    currency: validateCurrency(raw.currency, fail),
-    location: validateOptionalText(raw.location, 'location', 'Location', LIMITS.locationMax, fail),
-    theme: validateOptionalText(raw.theme, 'theme', 'Theme', LIMITS.themeMax, fail),
-    interests: validateOptionalText(raw.interests, 'interests', 'Interests', LIMITS.interestsMax, fail),
-    priorities: definition ? validatePriorities(raw.priorities, definition, fail) : [],
-  };
+  const eventName = cleanText(raw.eventName);
+  if (eventName.length === 0) fail('eventName', 'Enter a name for your event.');
+  else if (eventName.length > LIMITS.nameMax) {
+    fail('eventName', `Event name must be ${LIMITS.nameMax} characters or fewer.`);
+  }
+
+  const eventDate = typeof raw.eventDate === 'string' ? raw.eventDate : '';
+  if (!parseIsoDate(eventDate)) fail('eventDate', 'Enter the event date as a valid date.');
+  else if (eventDate < today) fail('eventDate', 'The event date must be today or later.');
+  else if (eventDate > addDays(today, LIMITS.planningHorizonDays)) {
+    fail('eventDate', 'The event date must be within the next five years.');
+  }
+
+  const guestCount = toInteger(raw.guestCount);
+  if (guestCount === null || guestCount < 1 || guestCount > LIMITS.guestsMax) {
+    fail('guestCount', `Enter a guest count between 1 and ${LIMITS.guestsMax}.`);
+  }
+
+  const totalBudget = toAmount(raw.totalBudget);
+  if (totalBudget === null || totalBudget < LIMITS.budgetMin || totalBudget > LIMITS.budgetMax) {
+    fail('totalBudget', `Enter a total budget between ${LIMITS.budgetMin} and ${LIMITS.budgetMax.toLocaleString('en-US')}.`);
+  }
+
+  const currency = typeof raw.currency === 'string' ? raw.currency : '';
+  if (!Object.hasOwn(CURRENCIES, currency)) fail('currency', 'Choose a supported currency.');
+
+  const location = validateOptionalText(raw.location, 'location', 'Location', LIMITS.locationMax, fail);
+  const theme = validateOptionalText(raw.theme, 'theme', 'Theme', LIMITS.themeMax, fail);
+  const interests = validateOptionalText(raw.interests, 'interests', 'Interests', LIMITS.interestsMax, fail);
+  const priorities = definition ? validatePriorities(raw.priorities, definition, fail) : [];
 
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, value: { eventType: definition.key, ...value } };
+
+  return {
+    ok: true,
+    value: {
+      eventType: definition.key,
+      eventName,
+      eventDate,
+      guestCount,
+      totalBudget,
+      currency,
+      location,
+      theme,
+      interests,
+      priorities,
+    },
+  };
 }

@@ -79,18 +79,6 @@ describe('createGeminiClient basics', () => {
     assert.equal(JSON.parse(net.calls[0].options.body).generationConfig.thinkingConfig, undefined);
   });
 
-  it('keeps thinking small on Gemini 3 models so short answers are not cut off', async () => {
-    const net = network(() => ok('x'));
-    await clientWith(net, { models: ['gemini-3-flash-preview'] }).complete(request);
-    assert.deepEqual(JSON.parse(net.calls[0].options.body).generationConfig.thinkingConfig, { thinkingLevel: 'minimal' });
-  });
-
-  it('sends no thinking setting for the "-latest" aliases, whose model can change', async () => {
-    const net = network(() => ok('x'));
-    await clientWith(net, { models: ['gemini-flash-latest'] }).complete(request);
-    assert.equal(JSON.parse(net.calls[0].options.body).generationConfig.thinkingConfig, undefined);
-  });
-
   it('joins text parts and ignores other parts', async () => {
     const net = network(() => ({
       ok: true,

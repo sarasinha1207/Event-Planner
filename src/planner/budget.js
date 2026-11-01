@@ -3,15 +3,8 @@
 
 export const PRIORITY_BOOST = 1.4;
 
-/**
- * Largest remainder method: split an integer total in proportion to weights
- * without losing or inventing a single unit.
- *
- * @param {number} total Whole units to split, a non-negative integer.
- * @param {number[]} weights Relative weights with a positive sum.
- * @returns {number[]} One whole amount per weight, adding up to `total`.
- * @throws {RangeError} When the total or the weights are not usable.
- */
+// Largest remainder method: split an integer total in proportion to weights
+// without losing or inventing a single unit.
 export function allocate(total, weights) {
   if (!Number.isInteger(total) || total < 0) {
     throw new RangeError('total must be a non-negative integer');
@@ -32,13 +25,6 @@ export function allocate(total, weights) {
   return amounts;
 }
 
-/**
- * Builds the budget: one line per category, with the reserve held back and priority categories weighted up.
- *
- * @param {object} definition The event type definition.
- * @param {object} input A validated event description.
- * @returns {{ total: number, currency: string, lines: object[] }}
- */
 export function buildBudget(definition, input) {
   const { budget, contingencyKey } = definition;
   const reserve = budget.find((line) => line.key === contingencyKey);

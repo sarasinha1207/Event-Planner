@@ -1,10 +1,5 @@
-/**
- * Small in-memory cache with a time limit and a size cap. Used to avoid paying
- * for the same AI request twice.
- *
- * @param {{ maxEntries: number, ttlMs: number, now?: () => number }} options
- * @returns {{ get: Function, set: Function, size: number }}
- */
+// Small in-memory cache with a time limit and a size cap. Used to avoid paying
+// for the same AI request twice.
 export function createTtlCache({ maxEntries, ttlMs, now = Date.now }) {
   const entries = new Map();
 

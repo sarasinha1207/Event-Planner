@@ -10,13 +10,6 @@ export const PHASES = Object.freeze({
   after: 'After the event',
 });
 
-/**
- * Names the planning phase of a task from how many days before the event it is due.
- *
- * @param {number} daysBefore Negative for tasks that come after the event.
- * @param {number} spanDays Length of the full lead time.
- * @returns {string}
- */
 export function phaseFor(daysBefore, spanDays) {
   if (daysBefore < 0) return PHASES.after;
   if (daysBefore <= EVENT_WEEK_DAYS) return PHASES.eventWeek;
@@ -26,24 +19,13 @@ export function phaseFor(daysBefore, spanDays) {
   return PHASES.final;
 }
 
-/**
- * The longest lead time, in days, among the tasks of an event type.
- *
- * @param {object} definition
- * @returns {number}
- */
 export function timelineSpan(definition) {
   return Math.max(...definition.timeline.map((task) => task.daysBefore));
 }
 
-/**
- * Turns "N days before the event" into a real date. When the event is closer
- * than the recommended lead time, earlier tasks are compressed proportionally so
- * that every task still lands between today and the event, in the same order.
- *
- * @param {{ eventDate: string, today: string, spanDays: number }} options
- * @returns {{ compressed: boolean, availableDays: number, dateFor: (daysBefore: number) => string }}
- */
+// Turns "N days before the event" into a real date. When the event is closer
+// than the recommended lead time, earlier tasks are compressed proportionally so
+// that every task still lands between today and the event, in the same order.
 export function createDateScaler({ eventDate, today, spanDays }) {
   const available = Math.max(0, diffDays(today, eventDate));
   const factor = available >= spanDays ? 1 : available / spanDays;
@@ -61,19 +43,6 @@ export function createDateScaler({ eventDate, today, spanDays }) {
   };
 }
 
-// Earlier due dates first. Tasks due on the same day keep their written order.
-function byDueDateThenOrder(a, b) {
-  if (a.dueDate !== b.dueDate) return a.dueDate < b.dueDate ? -1 : 1;
-  return a.order - b.order;
-}
-
-/**
- * Builds the dated task list in due-date order.
- *
- * @param {object} definition The event type definition.
- * @param {object} scaler From `createDateScaler`.
- * @returns {{ compressed: boolean, recommendedWeeks: number, tasks: object[] }}
- */
 export function buildTimeline(definition, scaler) {
   const spanDays = timelineSpan(definition);
   const labels = new Map(definition.budget.map((line) => [line.key, line.label]));
@@ -88,7 +57,7 @@ export function buildTimeline(definition, scaler) {
       phase: phaseFor(task.daysBefore, spanDays),
       dueDate: scaler.dateFor(task.daysBefore),
     }))
-    .sort(byDueDateThenOrder)
+    .sort((a, b) => (a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : a.order - b.order))
     .map(({ order, ...task }) => task);
 
   return {

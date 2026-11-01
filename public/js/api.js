@@ -12,23 +12,12 @@ export class ApiError extends Error {
   }
 }
 
-/**
- * Converts any failure into the field error list the form knows how to show.
- *
- * @param {unknown} error
- * @returns {{ field: string, message: string }[]}
- */
+// Converts any failure into the field error list the form knows how to show.
 export function toFieldErrors(error) {
   if (error instanceof ApiError && error.errors.length > 0) return error.errors;
   return [{ field: 'form', message: error?.message || 'Something went wrong. Please try again.' }];
 }
 
-/**
- * Creates the client for the planner's JSON API.
- *
- * @param {typeof fetch} [fetchImpl]
- * @returns {Record<string, Function>}
- */
 export function createApi(fetchImpl = globalThis.fetch.bind(globalThis)) {
   async function request(path, body) {
     let response;

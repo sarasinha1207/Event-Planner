@@ -1,12 +1,7 @@
 import { HttpError } from './errors.js';
 
-/**
- * Maps "METHOD /path" to handlers and distinguishes an unknown path (404) from
- * a known path used with the wrong method (405).
- *
- * @param {{ method: string, path: string }[]} routes
- * @returns {{ resolve: (method: string, path: string) => object }}
- */
+// Maps "METHOD /path" to handlers and distinguishes an unknown path (404) from
+// a known path used with the wrong method (405).
 export function createRouter(routes) {
   const byPath = new Map();
   for (const route of routes) {

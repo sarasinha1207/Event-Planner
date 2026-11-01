@@ -7,18 +7,13 @@ function hostnameOf(value) {
   return HOST_HEADER.exec(value)?.groups.name.toLowerCase() ?? null;
 }
 
-/**
- * Defends a locally run server against attacks that come through the visitor's
- * own browser:
- *   - The Host header must name this server. A page on another site that tricks
- *     the browser into resolving its own domain to this machine (DNS rebinding)
- *     is refused, because the Host it sends is not one of ours.
- *   - Requests that change something must come from this site's own pages: when
- *     the browser says which site sent the request (Origin), it has to be us.
- *
- * @param {{ allowedHosts: readonly string[] | null }} options
- * @returns {{ check: (req: object) => void }} `check` throws an HttpError.
- */
+// Defends a locally run server against attacks that come through the visitor's
+// own browser:
+//  - The Host header must name this server. A page on another site that tricks
+//    the browser into resolving its own domain to this machine (DNS rebinding)
+//    is refused, because the Host it sends is not one of ours.
+//  - Requests that change something must come from this site's own pages: when
+//    the browser says which site sent the request (Origin), it has to be us.
 export function createHostGuard({ allowedHosts }) {
   const allowed = allowedHosts ? new Set(allowedHosts.map((host) => host.toLowerCase())) : null;
 

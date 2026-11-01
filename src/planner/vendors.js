@@ -7,14 +7,6 @@ const COMMON_STEPS = Object.freeze([
   { suffix: 'confirm', text: 'Confirm arrival time and final details one week before the event' },
 ]);
 
-/**
- * Builds the vendor checklist with the longest lead times first.
- *
- * @param {object} definition The event type definition.
- * @param {object} budget From `buildBudget`.
- * @param {object} scaler From `createDateScaler`.
- * @returns {object[]}
- */
 export function buildVendors(definition, budget, scaler) {
   const lines = new Map(budget.lines.map((line) => [line.key, line]));
 

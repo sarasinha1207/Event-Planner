@@ -36,12 +36,6 @@ function isIdeaShape(idea) {
   return isObject(idea) && isText(idea.title) && isText(idea.detail) && isText(idea.category);
 }
 
-/**
- * Whether a value has the shape of a plan, so edited or outdated saved data is never used.
- *
- * @param {unknown} plan
- * @returns {boolean}
- */
 export function isPlanShape(plan) {
   return (
     isObject(plan) &&
@@ -70,12 +64,6 @@ export function isPlanShape(plan) {
   );
 }
 
-/**
- * Creates the saved-plan store over a Storage object, or over nothing.
- *
- * @param {Storage | null} storage
- * @returns {{ load: Function, save: Function, clear: Function }}
- */
 export function createStore(storage) {
   function load() {
     if (!storage) return null;
@@ -110,11 +98,6 @@ export function createStore(storage) {
   return { load, save, clear };
 }
 
-/**
- * The browser's local storage, or null when it is missing or blocked.
- *
- * @returns {Storage | null}
- */
 export function browserStorage() {
   try {
     return globalThis.localStorage ?? null;

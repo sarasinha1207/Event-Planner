@@ -76,14 +76,6 @@ function buildBudget(plan, progress, money) {
   };
 }
 
-/**
- * Turns a plan and the visitor's progress into one plain description shared by the print sheet and the text download.
- *
- * @param {object} plan
- * @param {object} progress
- * @param {{ locale?: string, today: string }} options
- * @returns {object}
- */
 export function buildReport(plan, progress, { locale = 'en', today }) {
   const money = (amount) => formatMoney(amount, plan.budget.currency, locale);
   const { input } = plan;

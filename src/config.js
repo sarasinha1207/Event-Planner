@@ -1,24 +1,14 @@
 // Gemini models to try, in order of preference. When one is out of quota,
 // overloaded or retired, the next one is used automatically.
-// Models that Google has retired answer with 404 and are skipped, so the list ends
-// with the "-latest" aliases (which always point at a current model) and the
-// older names that only some accounts can still use.
 export const DEFAULT_GEMINI_MODELS = Object.freeze([
   'gemini-2.5-flash',
-  'gemini-3.1-flash-lite',
-  'gemini-3-flash-preview',
-  'gemini-flash-lite-latest',
-  'gemini-flash-latest',
   'gemini-2.5-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
   'gemini-2.5-pro',
 ]);
 
-// How long one model may take. The assistant tries further models while the total
-// stays within about three times this, which must be less than the browser's own
-// request limit (30 seconds) and the 30 second limit of a Vercel function.
-const DEFAULT_AI_TIMEOUT_MS = 8_000;
-
-const MODEL_NAME =/^[a-z0-9][a-z0-9.-]{1,60}$/;
+const MODEL_NAME = /^[a-z0-9][a-z0-9.-]{1,60}$/;
 const HOST_NAME = /^(?:[a-z0-9.-]{1,253}|\[[0-9a-f:]{2,45}\])$/i;
 const LOOPBACK_ADDRESSES = ['localhost', '127.0.0.1', '::1'];
 const LOOPBACK_HOST_NAMES = Object.freeze(['localhost', '127.0.0.1', '[::1]']);
@@ -63,14 +53,8 @@ function readAllowedHosts(env, listenHost) {
   return Object.freeze(hosts);
 }
 
-/**
- * Reads settings from environment variables. Nothing is required: without a
- * Gemini API key the application runs entirely on the built-in planner.
- *
- * @param {Record<string, string | undefined>} [env]
- * @returns {Readonly<object>}
- * @throws {Error} When a setting has an invalid value.
- */
+// Reads settings from environment variables. Nothing is required: without a
+// Gemini API key the application runs entirely on the built-in planner.
 export function loadConfig(env = process.env) {
   const host = env.HOST || '127.0.0.1';
   return Object.freeze({
@@ -80,7 +64,7 @@ export function loadConfig(env = process.env) {
     trustProxy: readFlag(env, 'TRUST_PROXY'),
     geminiApiKey: (env.GEMINI_API_KEY ?? '').trim(),
     geminiModels: readModels(env),
-    aiTimeoutMs: readInteger(env, 'AI_TIMEOUT_MS', DEFAULT_AI_TIMEOUT_MS, 1000, 120_000),
+    aiTimeoutMs: readInteger(env, 'AI_TIMEOUT_MS', 20_000, 1000, 120_000),
     rateLimitWindowMs: readInteger(env, 'RATE_LIMIT_WINDOW_MS', 60_000, 1000, 3_600_000),
     rateLimitMax: readInteger(env, 'RATE_LIMIT_MAX', 120, 1, 100_000),
     aiRateLimitMax: readInteger(env, 'AI_RATE_LIMIT_MAX', 20, 1, 10_000),
